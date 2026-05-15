@@ -23,6 +23,7 @@ export default async function WikiPage({ params }: { params: { slug: string } })
   if (params.slug === "recent-changes") return <RecentChangesView />;
   if (params.slug === "community") return <CommunityView />;
   if (params.slug === "departments") return <DepartmentsView />;
+  if (params.slug === "locations") return <LocationsView />;
 
   const page = await getPage(params.slug);
   if (!page) return notFound();
@@ -172,6 +173,71 @@ async function DepartmentsView() {
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1">
               {departments.map((p) => {
+                const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
+                return (
+                  <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
+                    <div className="panel aspect-square overflow-hidden group-hover:border-pulse-700/60 transition">
+                      {img ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pulse-900/40 via-panel2 to-black">
+                          <div className="w-20 h-20 rounded-full border-2 border-pulse-600/70 flex items-center justify-center text-pulse-300 font-display font-black text-xl">
+                            {p.title.split(/\s+/).map((w) => w[0]).join("").slice(0, 4)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs md:text-sm font-semibold text-zinc-100 leading-tight group-hover:text-pulse-300 transition">
+                      {p.title}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    </Layout>
+  );
+}
+
+
+async function LocationsView() {
+  const all = await getAllPages();
+  const locations = all.filter(
+    (p) =>
+      p.category.toLowerCase() === "neighborhood" ||
+      p.category.toLowerCase() === "location" ||
+      p.tags.some((tag) => ["neighborhood", "location", "district", "area"].includes(tag.toLowerCase()))
+  );
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <header className="border-b border-line pb-4">
+          <h1 className="font-display font-extrabold text-3xl text-white">Locations</h1>
+          <p className="text-zinc-400 text-sm mt-1">Category page</p>
+        </header>
+        <section className="panel relative overflow-hidden">
+          <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
+          <div className="relative px-6 py-12 text-center">
+            <h2 className="inline-block font-display text-2xl md:text-4xl font-black uppercase text-white leading-none tracking-tight border-b-[6px] border-pulse-600 pb-2">
+              Neighborhoods &amp; Locations
+            </h2>
+            <p className="mt-4 text-sm text-zinc-300">Districts, neighborhoods, and points of interest in the Pulse RP world.</p>
+          </div>
+        </section>
+        <section>
+          <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
+            All Locations
+            <span className="absolute left-0 -bottom-px h-[2px] w-12 bg-pulse-600" />
+          </h2>
+          {locations.length === 0 ? (
+            <p className="text-sm text-zinc-400">No location pages yet.</p>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1">
+              {locations.map((p) => {
                 const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
                 return (
                   <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
