@@ -889,16 +889,12 @@ function fetchLibrary(): Promise<LibraryFile[]> {
     .then((d: { files?: LibraryFile[] }) => {
       _libraryCache = d.files || [];
       _libraryPromise = null;
-      return _libraryCache;
+      return _libraryCache!;
     })
-    .catch(() => {
-      _libraryPromise = null;
-      return [];
-    });
+    .catch(() => { _libraryPromise = null; return []; });
   return _libraryPromise;
 }
 
-// Call this after an upload so the next open reflects new images
 function invalidateLibraryCache() {
   _libraryCache = null;
   _libraryPromise = null;
@@ -916,12 +912,7 @@ function ImageLibraryModal({
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    // If already cached, setFiles instantly (no spinner)
-    if (_libraryCache) {
-      setFiles(_libraryCache);
-      setLoading(false);
-      return;
-    }
+    if (_libraryCache) { setFiles(_libraryCache); setLoading(false); return; }
     fetchLibrary().then((f) => { setFiles(f); setLoading(false); });
   }, []);
 
