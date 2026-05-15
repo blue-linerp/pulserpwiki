@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Shield } from "lucide-react";
+import { X, User, Building2, Shield, MapPin } from "lucide-react";
 
 const PAGE_TYPES = [
   {
@@ -28,6 +28,14 @@ const PAGE_TYPES = [
     description: "A law enforcement agency, emergency service, or government body — roster and command structure.",
     accent: "border-blue-700/50 hover:border-blue-500/70",
     iconBg: "bg-blue-900/30 text-blue-400",
+  },
+  {
+    type: "neighborhood",
+    icon: <MapPin className="w-7 h-7" />,
+    label: "Neighborhood / Location Page",
+    description: "A district, neighborhood, or point of interest — geography, gangs, businesses, and notable residents.",
+    accent: "border-emerald-700/50 hover:border-emerald-500/70",
+    iconBg: "bg-emerald-900/30 text-emerald-400",
   },
 ] as const;
 

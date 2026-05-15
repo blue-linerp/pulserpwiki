@@ -1,7 +1,7 @@
 import PageEditor from "@/components/PageEditor";
 import type { WikiPage } from "@/data/types";
 import { buildCharacterTemplateFields } from "@/data/characterTemplate";
-import { buildTemplateFields, BUSINESS_TEMPLATE, DEPARTMENT_TEMPLATE } from "@/data/infoboxTemplates";
+import { buildTemplateFields, BUSINESS_TEMPLATE, DEPARTMENT_TEMPLATE, NEIGHBORHOOD_TEMPLATE } from "@/data/infoboxTemplates";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,30 @@ function buildBlank(type: string): WikiPage {
         title: "New Department",
         templateKey: "department",
         fields: buildTemplateFields(DEPARTMENT_TEMPLATE),
+      },
+    };
+  }
+
+  if (type === "neighborhood") {
+    return {
+      slug: "neighborhood-new-location",
+      title: "New Location",
+      subtitle: "",
+      category: "Neighborhood",
+      description: "A new neighborhood or location page.",
+      updated: "Updated today",
+      tags: ["Neighborhood", "Location"],
+      related: [],
+      intro: ["Write a short description of this neighborhood or location."],
+      sections: [
+        { heading: "Overview", body: ["General information about this area."] },
+        { heading: "History", body: ["Background and notable history."] },
+        { heading: "Points of Interest", body: ["- Notable location one", "- Notable location two"] },
+      ],
+      infobox: {
+        title: "New Location",
+        templateKey: "neighborhood",
+        fields: buildTemplateFields(NEIGHBORHOOD_TEMPLATE),
       },
     };
   }
