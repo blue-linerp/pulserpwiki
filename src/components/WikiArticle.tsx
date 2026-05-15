@@ -127,6 +127,22 @@ export default async function WikiArticle({
           </div>
           <WikiActions slug={page.slug} />
         </div>
+        {relatedPages.length > 0 && (
+          <div className="mt-2 flex items-center gap-1 flex-wrap text-[12px]">
+            <span className="text-zinc-500">in:</span>
+            {relatedPages.map((r, i) => (
+              <span key={r.slug} className="flex items-center gap-1">
+                <Link
+                  href={`/wiki/${r.slug}`}
+                  className="text-pulse-500 hover:text-pulse-400 font-medium transition"
+                >
+                  {r.title}
+                </Link>
+                {i < relatedPages.length - 1 && <span className="text-zinc-600">,</span>}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-3 h-[2px] w-24 bg-gradient-to-r from-pulse-600 to-transparent" />
       </header>
 
@@ -172,37 +188,7 @@ export default async function WikiArticle({
             </>
           )}
 
-          {relatedPages.length > 0 && (
-            <section className="mt-10">
-              <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
-                Related Pages
-                <span className="absolute left-0 -bottom-px h-[2px] w-12 bg-pulse-600" />
-              </h2>
-              <ul className="grid sm:grid-cols-2 gap-2">
-                {relatedPages.map((r) => {
-                  const imageUrl = r.slug === "departments" ? DEPARTMENTS_LOGO : r.imageUrl;
-                  return (
-                    <li key={r.slug}>
-                      <Link href={`/wiki/${r.slug}`} className="block panel p-3 hover:border-pulse-700/60 hover:bg-panel2 transition">
-                        <div className="flex items-center gap-3">
-                          {imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-line shrink-0" />
-                          ) : (
-                            <div className="w-12 h-12 rounded bg-panel2 border border-line shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium text-white truncate">{r.title}</div>
-                            <div className="text-[11px] text-zinc-500 truncate">{r.subtitle || `/wiki/${r.slug}`}</div>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
+
 
           <div className="mt-10 pt-4 border-t border-line flex items-center flex-wrap gap-2">
             <Tag className="w-4 h-4 text-zinc-500" />
