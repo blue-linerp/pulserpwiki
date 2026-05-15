@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
   if (q.length < 2) return NextResponse.json([]);
 
-  const all = getAllPages();
+  const all = await getAllPages();
 
   const results = all
     .filter((p) => {
