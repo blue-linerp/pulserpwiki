@@ -8,8 +8,8 @@ import { sidebarGroups } from "@/data/sidebar";
 
 export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const page = getPage(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const page = await getPage(params.slug);
   if (!page) return { title: "Government Departments — Pulse RP Wiki" };
   return {
     title: `${page.title} — Pulse RP Wiki`,
@@ -17,20 +17,19 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function WikiPage({ params }: { params: { slug: string } }) {
+export default async function WikiPage({ params }: { params: { slug: string } }) {
   // Special synthetic pages
   if (params.slug === "all-pages") return <AllPagesView />;
   if (params.slug === "recent-changes") return <RecentChangesView />;
   if (params.slug === "community") return <CommunityView />;
   if (params.slug === "departments") return <DepartmentsView />;
 
-  const page = getPage(params.slug);
+  const page = await getPage(params.slug);
   if (!page) return notFound();
 
-  // Inject custom Character cards on the Characters page.
   let extra: React.ReactNode = null;
   if (params.slug === "characters") {
-    const chars = getCustomPagesByCategory("Character");
+    const chars = await getCustomPagesByCategory("Character");
     if (chars.length) {
       extra = (
         <section className="mt-8">
@@ -41,10 +40,7 @@ export default function WikiPage({ params }: { params: { slug: string } }) {
           <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {chars.map((c) => (
               <li key={c.slug}>
-                <Link
-                  href={`/wiki/${c.slug}`}
-                  className="block panel p-3 hover:border-pulse-700/60 hover:bg-panel2 transition"
-                >
+                <Link href={`/wiki/${c.slug}`} className="block panel p-3 hover:border-pulse-700/60 hover:bg-panel2 transition">
                   <div className="flex items-center gap-3">
                     {c.infobox?.imageUrl || c.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -74,8 +70,8 @@ export default function WikiPage({ params }: { params: { slug: string } }) {
   );
 }
 
-function AllPagesView() {
-  const all = getAllPages();
+async function AllPagesView() {
+  const all = await getAllPages();
   const grouped: Record<string, typeof all> = {};
   for (const p of all) {
     grouped[p.category] = grouped[p.category] || [];
@@ -136,8 +132,9 @@ function firstGalleryImage(value?: string): string | undefined {
   return filename ? resolveImageSrc(filename) : undefined;
 }
 
-function DepartmentsView() {
-  const departments = getAllPages().filter(
+async function DepartmentsView() {
+  const all = await getAllPages();
+  const departments = all.filter(
     (p) =>
       p.slug !== "department-of-justice-legislation" &&
       (p.category.toLowerCase() === "department" ||
@@ -145,10 +142,8 @@ function DepartmentsView() {
       p.tags.some((tag) => tag.toLowerCase() === "department") ||
       p.slug === "los-santos-police-department")
   );
-  const lspd = getPage("los-santos-police-department");
-  if (lspd && !departments.some((p) => p.slug === lspd.slug)) {
-    departments.push(lspd);
-  }
+  const lspd = await getPage("los-santos-police-department");
+  if (lspd && !departments.some((p) => p.slug === lspd.slug)) departments.push(lspd);
 
   return (
     <Layout>
@@ -157,25 +152,15 @@ function DepartmentsView() {
           <h1 className="font-display font-extrabold text-3xl text-white">Departments</h1>
           <p className="text-zinc-400 text-sm mt-1">Category page</p>
         </header>
-
         <section className="panel relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-60 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))",
-            }}
-          />
+          <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
           <div className="relative px-6 py-12 text-center">
             <h2 className="inline-block font-display text-2xl md:text-4xl font-black uppercase text-white leading-none tracking-tight border-b-[6px] border-pulse-600 pb-2">
               Government Departments
             </h2>
-            <p className="mt-4 text-sm text-zinc-300">
-              This category is for Government Departments.
-            </p>
+            <p className="mt-4 text-sm text-zinc-300">This category is for Government Departments.</p>
           </div>
         </section>
-
         <section>
           <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
             All Departments
@@ -188,27 +173,15 @@ function DepartmentsView() {
               {departments.map((p) => {
                 const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
                 return (
-                  <Link
-                    key={p.slug}
-                    href={`/wiki/${p.slug}`}
-                    className="group w-36 md:w-40 shrink-0"
-                  >
+                  <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
                     <div className="panel aspect-square overflow-hidden group-hover:border-pulse-700/60 transition">
                       {img ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={img}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={img} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pulse-900/40 via-panel2 to-black">
                           <div className="w-20 h-20 rounded-full border-2 border-pulse-600/70 flex items-center justify-center text-pulse-300 font-display font-black text-xl">
-                            {p.title
-                              .split(/\s+/)
-                              .map((w) => w[0])
-                              .join("")
-                              .slice(0, 4)}
+                            {p.title.split(/\s+/).map((w) => w[0]).join("").slice(0, 4)}
                           </div>
                         </div>
                       )}
