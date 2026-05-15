@@ -3,7 +3,7 @@ import { CHARACTER_TEMPLATE, templateFieldLabel, templateFieldSource, type Templ
 
 export { templateFieldLabel, templateFieldSource } from "./characterTemplate";
 
-export type InfoboxTemplateKey = "character" | "business" | "department" | "lspd" | "bcso" | "doj" | "ems" | "site";
+export type InfoboxTemplateKey = "character" | "business" | "department" | "lspd" | "bcso" | "doj" | "ems" | "site" | "neighborhood";
 
 const range = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => `${prefix} ${i + 1}`);
@@ -331,6 +331,48 @@ export const BCSO_TEMPLATE: TemplateGroup[] = [
   { heading: "Cadets", fields: numberedFields("Cadet", "cadet", 10) },
 ];
 
+
+export const NEIGHBORHOOD_TEMPLATE: TemplateGroup[] = [
+  {
+    heading: "Information",
+    fields: [
+      { label: "Type", source: "type" },
+      { label: "Also known as", source: "also_known_as" },
+    ],
+  },
+  {
+    heading: "Geographic Information",
+    fields: [
+      { label: "District", source: "district" },
+      { label: "City/Town/Village", source: "city" },
+      { label: "Cities/Towns/Villages", source: "cities" },
+      { label: "County", source: "county" },
+      { label: "Counties", source: "counties" },
+      { label: "State", source: "state" },
+    ],
+  },
+  {
+    heading: "Other Information",
+    fields: [
+      { label: "Country", source: "country" },
+      { label: "Gang(s)", source: "gangs" },
+      { label: "Places of Interest", source: "places_of_interest" },
+      { label: "Businesses", source: "businesses" },
+      { label: "Notable Residents", source: "notable_residents" },
+      { label: "Inhabitants", source: "inhabitants" },
+      { label: "Row 1", source: "row1" },
+      { label: "Row 2", source: "row2" },
+      { label: "Row 3", source: "row3" },
+    ],
+  },
+  {
+    heading: "Section Header",
+    fields: [
+      { label: "Row 4", source: "row4" },
+    ],
+  },
+];
+
 export const INFOBOX_TEMPLATES: Record<InfoboxTemplateKey, InfoboxTemplateDefinition> = {
   site: {
     key: "site",
@@ -371,6 +413,11 @@ export const INFOBOX_TEMPLATES: Record<InfoboxTemplateKey, InfoboxTemplateDefini
     key: "ems",
     label: "EMS Infobox",
     groups: EMS_TEMPLATE,
+  },
+  neighborhood: {
+    key: "neighborhood",
+    label: "Neighborhood Infobox",
+    groups: NEIGHBORHOOD_TEMPLATE,
   },
 };
 
@@ -417,6 +464,7 @@ function isLspdText(text: string): boolean {
 export function inferInfoboxTemplate(page: { title: string; category: string }): InfoboxTemplateDefinition {
   if (page.category === "Main") return INFOBOX_TEMPLATES.site;
   if (page.category === "Business") return INFOBOX_TEMPLATES.business;
+  if (page.category === "Neighborhood" || page.category === "Location") return INFOBOX_TEMPLATES.neighborhood;
   const text = `${page.title} ${page.category}`.toLowerCase();
   if (isDojText(text)) return INFOBOX_TEMPLATES.doj;
   if (isEmsText(text)) return INFOBOX_TEMPLATES.ems;
