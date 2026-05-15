@@ -47,6 +47,13 @@ export const sidebarGroups: SidebarGroup[] = [
     ],
   },
   {
+    title: "Locations",
+    links: [
+      { label: "All Locations", href: "/wiki/locations" },
+      { label: "St. Fiacre Medical Center", href: "/wiki/st-fiacre" },
+    ],
+  },
+  {
     title: "Guides",
     links: [
       { label: "How to Join", href: "/wiki/how-to-join" },
