@@ -4,7 +4,8 @@ import { getAllPages, getPage } from "@/data/pages/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const departments = getAllPages()
+  const all = await getAllPages();
+  const departments = all
     .filter((p) => p.slug !== "department-of-justice-legislation")
     .filter(
       (p) =>
@@ -14,7 +15,8 @@ export async function GET() {
         p.slug === "los-santos-police-department"
     )
     .map((p) => ({ label: p.title, href: `/wiki/${p.slug}` }));
-  const lspd = getPage("los-santos-police-department");
+
+  const lspd = await getPage("los-santos-police-department");
   if (lspd && !departments.some((p) => p.href === `/wiki/${lspd.slug}`)) {
     departments.push({ label: lspd.title, href: `/wiki/${lspd.slug}` });
   }
