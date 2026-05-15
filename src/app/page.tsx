@@ -9,8 +9,8 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const page = getPage("main-page")!;
+export default async function HomePage() {
+  const page = await getPage("main-page");
   return (
     <Layout>
       <div className="space-y-6">
@@ -103,7 +103,7 @@ export default function HomePage() {
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-            {page.infobox && <WikiInfobox box={page.infobox} />}
+            {page?.infobox && <WikiInfobox box={page.infobox} />}
             <RecentChanges />
           </aside>
         </div>
@@ -125,18 +125,11 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
 function HeaderBtn({ children, icon, href }: { children: React.ReactNode; icon: React.ReactNode; href?: string }) {
   const cls = "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border border-line bg-panel2 hover:bg-panel hover:border-pulse-700/60 text-zinc-300 hover:text-white transition";
   if (href) return <Link href={href} className={cls}>{icon}{children}</Link>;
-  return (
-    <button className={cls}>
-      {icon}
-      {children}
-    </button>
-  );
+  return <button className={cls}>{icon}{children}</button>;
 }
 
 function CommunityCard({
-  icon,
-  title,
-  items,
+  icon, title, items,
 }: {
   icon: React.ReactNode;
   title: string;
