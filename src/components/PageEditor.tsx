@@ -963,6 +963,165 @@ function ImageLibraryModal({
   );
 }
 
+function GalleryBuilderModal({
+  current,
+  onChange,
+  onClose,
+}: {
+  current: string;
+  onChange: (val: string) => void;
+  onClose: () => void;
+}) {
+  const [files, setFiles] = useState<LibraryFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  // Parse existing gallery entries
+  const parseEntries = (raw: string): { url: string; caption: string }[] => {
+    const m = raw.match(/<gallery[^>]*>([\s\S]*?)<\/gallery>/i);
+    if (!m) return [];
+    return m[1].split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+      const [url, ...cap] = l.split("|");
+      return { url: url.trim(), caption: cap.join("|").trim() };
+    });
+  };
+  const [entries, setEntries] = useState<{ url: string; caption: string }[]>(
+    () => parseEntries(current)
+  );
+
+  useEffect(() => {
+    fetch("/api/uploads", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { files?: LibraryFile[] }) => setFiles(d.files || []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = files.filter((f) =>
+    f.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function addImage(url: string) {
+    setEntries((prev) => [...prev, { url, caption: "" }]);
+  }
+
+  function removeEntry(i: number) {
+    setEntries((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function updateCaption(i: number, caption: string) {
+    setEntries((prev) => prev.map((e, idx) => idx === i ? { ...e, caption } : e));
+  }
+
+  function moveUp(i: number) {
+    if (i === 0) return;
+    setEntries((prev) => {
+      const next = [...prev];
+      [next[i - 1], next[i]] = [next[i], next[i - 1]];
+      return next;
+    });
+  }
+
+  function moveDown(i: number) {
+    setEntries((prev) => {
+      if (i >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[i], next[i + 1]] = [next[i + 1], next[i]];
+      return next;
+    });
+  }
+
+  function apply() {
+    if (entries.length === 0) { onChange(""); onClose(); return; }
+    const lines = entries.map(e => e.caption ? `${e.url}|${e.caption}` : e.url).join("\n");
+    onChange(`<gallery type="slideshow" hideaddbutton="true" navigation="true">\n${lines}\n</gallery>`);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-[90vh] bg-panel border border-line rounded-lg shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <header className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-pulse-500" />
+            <h3 className="font-display font-semibold text-white text-sm">Gallery Builder</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded border border-line text-zinc-400 hover:text-white"><X className="w-4 h-4" /></button>
+        </header>
+
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+          {/* Left: library picker */}
+          <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-line flex flex-col">
+            <div className="p-2 border-b border-line">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search images…"
+                  className="w-full pl-7 pr-3 py-1.5 text-xs bg-panel2 border border-line rounded-md text-zinc-200 focus:outline-none focus:border-pulse-600/60" />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {loading ? (
+                <div className="flex items-center justify-center py-8 text-zinc-500 text-sm"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading…</div>
+              ) : filtered.length === 0 ? (
+                <p className="text-center text-zinc-500 text-xs py-8">No images found.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {filtered.map((f) => (
+                    <button key={f.url} type="button" onClick={() => addImage(f.url)}
+                      className="group relative aspect-square bg-panel2 border border-line rounded overflow-hidden hover:border-pulse-500/60 transition"
+                      title={`Add: ${f.name}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={f.url} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-white/0 group-hover:text-white transition" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: selected slides */}
+          <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="px-3 py-2 border-b border-line text-[10px] uppercase tracking-wider text-zinc-500 shrink-0">
+              Slides ({entries.length}) — click images on the left to add
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+              {entries.length === 0 && (
+                <p className="text-center text-zinc-600 text-xs py-8">No slides yet. Click images to add them.</p>
+              )}
+              {entries.map((e, i) => (
+                <div key={i} className="flex items-center gap-2 panel p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={e.url} alt="" className="w-12 h-12 object-cover rounded border border-line shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <input type="text" value={e.caption} onChange={(ev) => updateCaption(i, ev.target.value)}
+                      placeholder="Caption (optional)"
+                      className="w-full bg-panel2 border border-line rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-pulse-600/60" />
+                    <div className="text-[9px] text-zinc-600 truncate mt-0.5">{e.url.split("/").pop()}</div>
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button type="button" onClick={() => moveUp(i)} className="text-zinc-500 hover:text-white text-[10px]">▲</button>
+                    <button type="button" onClick={() => moveDown(i)} className="text-zinc-500 hover:text-white text-[10px]">▼</button>
+                  </div>
+                  <button type="button" onClick={() => removeEntry(i)} className="text-zinc-500 hover:text-red-400 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <footer className="px-4 py-3 border-t border-line flex items-center justify-end gap-2 shrink-0">
+          <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-line text-zinc-300 hover:text-white">Cancel</button>
+          <button type="button" onClick={apply}
+            className="px-4 py-1.5 text-xs font-semibold rounded-md bg-pulse-600 hover:bg-pulse-500 border border-pulse-500/60 text-white shadow-glow">
+            Apply Gallery
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 function ImageInput({
   url,
   onChange,
@@ -974,14 +1133,59 @@ function ImageInput({
 }) {
   const [busy, setBusy] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const isGallery = url?.trim().toLowerCase().startsWith("<gallery");
+
+  function handleContextMenu(e: React.MouseEvent<HTMLTextAreaElement>) {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }
+
   return (
     <div className="space-y-2">
+      {ctxMenu && (
+        <div
+          className="fixed inset-0 z-[70]"
+          onClick={() => setCtxMenu(null)}
+          onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }}
+        >
+          <div
+            className="absolute bg-panel border border-line rounded-md shadow-xl py-1 min-w-[200px] z-[71]"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); setGalleryOpen(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-100"
+            >
+              <ImageIcon className="w-4 h-4 text-pulse-400" /> Build Gallery Slideshow
+            </button>
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); setLibraryOpen(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-100"
+            >
+              <Search className="w-4 h-4 text-zinc-400" /> Select from Library
+            </button>
+            <div className="border-t border-line my-1" />
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); onChange(null); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-400 hover:text-white"
+            >
+              <X className="w-4 h-4" /> Clear
+            </button>
+          </div>
+        </div>
+      )}
       <textarea
         value={url || ""}
         onChange={(e) => onChange(e.target.value || null)}
+        onContextMenu={handleContextMenu}
         className={`${input} min-h-[42px] resize-y`}
-        placeholder="/uploads/your-image.jpg, external URL, or <gallery>...</gallery>"
+        placeholder="Right-click to build a gallery, or paste a URL directly"
       />
       <div className="flex items-center gap-2 flex-wrap">
         <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-line bg-panel2 hover:border-pulse-700/60 text-zinc-200 cursor-pointer">
@@ -1009,31 +1213,30 @@ function ImageInput({
         >
           <ImageIcon className="w-3.5 h-3.5" /> Select from Library
         </button>
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-pulse-700/40 bg-pulse-900/20 hover:border-pulse-600/60 text-pulse-300"
+        >
+          <Plus className="w-3.5 h-3.5" /> Build Gallery
+        </button>
         {url && !isGallery && (
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt="" className="w-10 h-10 object-cover rounded border border-line" />
-            <button
-              type="button"
-              onClick={() => onChange(null)}
-              className="text-xs text-zinc-400 hover:text-white"
-            >
-              Clear
-            </button>
+            <button type="button" onClick={() => onChange(null)} className="text-xs text-zinc-400 hover:text-white">Clear</button>
           </div>
         )}
         {url && isGallery && (
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded border border-line bg-panel2 flex items-center justify-center text-[10px] text-zinc-400">
-              Gallery
-            </div>
             <button
               type="button"
-              onClick={() => onChange(null)}
-              className="text-xs text-zinc-400 hover:text-white"
+              onClick={() => setGalleryOpen(true)}
+              className="text-xs text-pulse-400 hover:text-pulse-300"
             >
-              Clear
+              Edit gallery
             </button>
+            <button type="button" onClick={() => onChange(null)} className="text-xs text-zinc-400 hover:text-white">Clear</button>
           </div>
         )}
       </div>
@@ -1041,6 +1244,13 @@ function ImageInput({
         <ImageLibraryModal
           onSelect={(u) => onChange(u)}
           onClose={() => setLibraryOpen(false)}
+        />
+      )}
+      {galleryOpen && (
+        <GalleryBuilderModal
+          current={url || ""}
+          onChange={(val) => onChange(val || null)}
+          onClose={() => setGalleryOpen(false)}
         />
       )}
     </div>
