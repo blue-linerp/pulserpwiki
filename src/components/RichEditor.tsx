@@ -149,8 +149,15 @@ function Toolbar({
   uploadImage: (file: File) => Promise<string | null>;
   onInsertInfobox?: () => void;
 }) {
+  const [libraryOpen, setLibraryOpen] = useState(false);
   return (
     <div className="flex items-center gap-0.5 px-2 py-1.5 flex-wrap bg-panel2/60">
+      {libraryOpen && (
+        <ImageLibraryModal
+          onSelect={(url) => { editor.chain().focus().setImage({ src: url }).run(); }}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
       <TBtn
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().chain().focus().undo().run()}
@@ -213,7 +220,7 @@ function Toolbar({
 
       <LinkButton editor={editor} />
 
-      <ImageButton editor={editor} uploadImage={uploadImage} />
+      <ImageButton editor={editor} uploadImage={uploadImage} onOpenLibrary={() => setLibraryOpen(true)} />
 
       <Separator />
 
@@ -221,6 +228,7 @@ function Toolbar({
         editor={editor}
         uploadImage={uploadImage}
         onInsertInfobox={onInsertInfobox}
+        onOpenLibrary={() => setLibraryOpen(true)}
       />
     </div>
   );
@@ -823,22 +831,139 @@ function TabBtn({
 
 /* -------------------- Image -------------------- */
 
+interface LibraryFile {
+  name: string;
+  url: string;
+  uploadedAt: number;
+  size: number;
+}
+
+function ImageLibraryModal({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (url: string) => void;
+  onClose: () => void;
+}) {
+  const [files, setFiles] = useState<LibraryFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetch("/api/uploads", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { files?: LibraryFile[] }) => setFiles(d.files || []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = files.filter((f) =>
+    f.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[80vh] bg-panel border border-line rounded-lg shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <ImageIconLucide className="w-4 h-4 text-pulse-500" />
+            <h3 className="font-display font-semibold text-white text-sm">Select from Library</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="pl-7 pr-3 py-1.5 text-xs bg-panel2 border border-line rounded-md text-zinc-200 focus:outline-none focus:border-pulse-600/60 w-40"
+              />
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded border border-line text-zinc-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto p-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-zinc-500 text-sm">
+              Loading…
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-zinc-500 text-sm py-12">No images found.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {filtered.map((f) => (
+                <button
+                  key={f.url}
+                  type="button"
+                  onClick={() => { onSelect(f.url); onClose(); }}
+                  className="group relative aspect-square bg-panel2 border border-line rounded overflow-hidden hover:border-pulse-500/60 transition"
+                  title={f.name}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={f.url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-end p-1">
+                    <span className="text-[9px] text-white/0 group-hover:text-white/90 truncate w-full transition leading-tight">
+                      {f.name.split("/").pop()}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImageButton({
   editor,
   uploadImage,
+  onOpenLibrary,
 }: {
   editor: Editor;
   uploadImage: (file: File) => Promise<string | null>;
+  onOpenLibrary: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(() => setOpen(false));
+
   return (
-    <>
+    <div className="relative" ref={ref}>
       <TBtn
-        onClick={() => inputRef.current?.click()}
-        title="Insert image (upload)"
+        onClick={() => setOpen((v) => !v)}
+        title="Insert image"
+        active={open}
       >
         <ImageIconLucide className="w-4 h-4" />
       </TBtn>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 panel py-1 shadow-xl overflow-hidden min-w-[180px]">
+          <button
+            type="button"
+            onClick={() => { setOpen(false); inputRef.current?.click(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-zinc-100 text-sm"
+          >
+            <ImageIconLucide className="w-4 h-4" /> Upload image
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); onOpenLibrary(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-zinc-100 text-sm"
+          >
+            <SearchIcon className="w-4 h-4" /> Select from Library
+          </button>
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -848,13 +973,11 @@ function ImageButton({
           const f = e.target.files?.[0];
           if (!f) return;
           const url = await uploadImage(f);
-          if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
-          }
+          if (url) editor.chain().focus().setImage({ src: url }).run();
           e.target.value = "";
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -864,10 +987,12 @@ function InsertMenu({
   editor,
   uploadImage,
   onInsertInfobox,
+  onOpenLibrary,
 }: {
   editor: Editor;
   uploadImage: (file: File) => Promise<string | null>;
   onInsertInfobox?: () => void;
+  onOpenLibrary: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
@@ -886,13 +1011,17 @@ function InsertMenu({
         <Dropdown>
           <button
             type="button"
-            onClick={() => {
-              setOpen(false);
-              fileRef.current?.click();
-            }}
+            onClick={() => { setOpen(false); fileRef.current?.click(); }}
             className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-zinc-100"
           >
-            <ImageIconLucide className="w-4 h-4" /> Image
+            <ImageIconLucide className="w-4 h-4" /> Upload Image
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); onOpenLibrary(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-zinc-100"
+          >
+            <SearchIcon className="w-4 h-4" /> Select from Library
           </button>
           {onInsertInfobox && (
             <button
