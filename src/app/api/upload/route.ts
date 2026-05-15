@@ -1,6 +1,5 @@
 /**
  * src/app/api/upload/route.ts
- * Handles image uploads — now uses Vercel Blob (prod) or local disk (dev).
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -16,7 +15,7 @@ const ALLOWED = new Map<string, string>([
   ["image/gif", "gif"],
   ["image/svg+xml", "svg"],
 ]);
-const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+const MAX_BYTES = 4 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   const me = await getCurrentUser();
@@ -42,6 +41,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File too large (max 4 MB)." }, { status: 413 });
   }
 
-  const url = await saveUpload(buf, file.name, file.type);
+  const url = await saveUpload(buf, file.name, file.type); // cache busted inside saveUpload
   return NextResponse.json({ url });
 }

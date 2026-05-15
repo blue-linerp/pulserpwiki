@@ -1,17 +1,18 @@
 /**
  * src/app/api/uploads/route.ts
- * Lists and deletes uploaded images via Vercel Blob (prod) or local disk (dev).
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { listUploads, deleteUpload } from "@/lib/uploadStorage";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
   const files = await listUploads();
-  return NextResponse.json({ files });
+  return NextResponse.json(
+    { files },
+    { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" } }
+  );
 }
 
 export async function DELETE(req: NextRequest) {
@@ -27,12 +28,11 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  // Accept either url (Vercel Blob) or name (local dev fallback)
   const url = body.url || (body.name ? `/uploads/${body.name}` : undefined);
   if (!url) {
     return NextResponse.json({ error: "Missing file url or name." }, { status: 400 });
   }
 
-  await deleteUpload(url);
+  await deleteUpload(url); // invalidateUploadsCache() called inside deleteUpload
   return NextResponse.json({ ok: true });
 }

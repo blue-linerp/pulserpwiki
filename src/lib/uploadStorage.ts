@@ -1,28 +1,15 @@
 /**
- * uploadStorage.ts — Vercel Blob replacement for local disk uploads
- * Drop this at  src/lib/uploadStorage.ts
- *
- * Env vars needed (set in Vercel dashboard):
- *   BLOB_READ_WRITE_TOKEN  — created automatically when you add Vercel Blob
- *                            in your project's Storage tab.
+ * src/lib/uploadStorage.ts — Vercel Blob (prod) or local disk (dev)
  */
-
 import { put, del, list } from "@vercel/blob";
 
-// In local dev (no BLOB_READ_WRITE_TOKEN) we fall back to local disk so you
-// can still run `npm run dev` without a Vercel account.
 const IS_VERCEL = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
-// ── local-dev fallback (only used outside Vercel) ───────────────────────────
 let localFallback: typeof import("./uploadStorage.local") | null = null;
 async function getLocal() {
-  if (!localFallback) {
-    localFallback = await import("./uploadStorage.local");
-  }
+  if (!localFallback) localFallback = await import("./uploadStorage.local");
   return localFallback;
 }
-
-// ── public API ───────────────────────────────────────────────────────────────
 
 export async function saveUpload(
   buffer: Uint8Array,
@@ -36,9 +23,9 @@ export async function saveUpload(
   const blob = await put(originalName, buffer, {
     access: "public",
     contentType: mimeType,
-    // addRandomSuffix avoids collisions and matches the old Date.now()-hex pattern
     addRandomSuffix: true,
   });
+  invalidateUploadsCache();
   return blob.url;
 }
 
@@ -48,6 +35,7 @@ export async function deleteUpload(url: string): Promise<void> {
     return local.deleteUpload(url);
   }
   await del(url);
+  invalidateUploadsCache();
 }
 
 export interface UploadedFile {
@@ -57,16 +45,37 @@ export interface UploadedFile {
   size: number;
 }
 
+// ── Server-side cache for the blob list ──────────────────────────────────────
+// Vercel Blob list() is slow (~300-800ms). Cache it for 60s.
+// Shared across all requests in the same serverless function instance.
+
+let _listCache: { files: UploadedFile[]; at: number } | null = null;
+const LIST_TTL = 60_000;
+
+export function invalidateUploadsCache(): void {
+  _listCache = null;
+}
+
 export async function listUploads(): Promise<UploadedFile[]> {
+  const now = Date.now();
+  if (_listCache && now - _listCache.at < LIST_TTL) {
+    return _listCache.files;
+  }
+
+  let files: UploadedFile[];
   if (!IS_VERCEL) {
     const local = await getLocal();
-    return local.listUploads();
+    files = await local.listUploads();
+  } else {
+    const { blobs } = await list();
+    files = blobs.map((b) => ({
+      name: b.pathname,
+      url: b.url,
+      uploadedAt: new Date(b.uploadedAt).getTime(),
+      size: b.size,
+    }));
   }
-  const { blobs } = await list();
-  return blobs.map((b) => ({
-    name: b.pathname,
-    url: b.url,
-    uploadedAt: new Date(b.uploadedAt).getTime(),
-    size: b.size,
-  }));
+
+  _listCache = { files, at: now };
+  return files;
 }
