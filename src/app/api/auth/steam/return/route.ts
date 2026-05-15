@@ -1,3 +1,6 @@
+/**
+ * src/app/api/auth/steam/return/route.ts
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import { verifySteamOpenId, fetchSteamProfile, siteUrl } from "@/lib/steam";
 import { Users } from "@/lib/db";
@@ -13,7 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   const profile = await fetchSteamProfile(steamId);
-  const user = Users.upsert({
+  const user = await Users.upsert({
     steam_id: steamId,
     persona: profile?.personaname ?? null,
     avatar: profile?.avatarfull ?? null,

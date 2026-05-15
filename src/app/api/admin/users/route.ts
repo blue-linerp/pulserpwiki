@@ -1,3 +1,6 @@
+/**
+ * src/app/api/admin/users/route.ts
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { Users } from "@/lib/db";
@@ -5,7 +8,7 @@ import { Users } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function serializeUser(u: ReturnType<typeof Users.all>[number]) {
+function serializeUser(u: Awaited<ReturnType<typeof Users.all>>[number]) {
   return {
     steamId: u.steam_id,
     persona: u.persona,
@@ -17,15 +20,13 @@ function serializeUser(u: ReturnType<typeof Users.all>[number]) {
 }
 
 export async function GET() {
-  const me = getCurrentUser();
+  const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const users = Users.all();
-  if (!users.some((user) => user.steam_id === me.steam_id)) {
-    users.unshift(me);
-  }
+  const users = await Users.all();
+  if (!users.some((u) => u.steam_id === me.steam_id)) users.unshift(me);
 
   return NextResponse.json({
     currentSteamId: me.steam_id,
@@ -34,20 +35,16 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const me = getCurrentUser();
+  const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   let body: { steamId?: string; role?: "admin" | "user" } = {};
-  try {
-    body = (await req.json()) as { steamId?: string; role?: "admin" | "user" };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
-  }
+  try { body = (await req.json()) as typeof body; }
+  catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
-  const steamId = body.steamId;
-  const role = body.role;
+  const { steamId, role } = body;
   if (!steamId || typeof steamId !== "string") {
     return NextResponse.json({ error: "Missing Steam ID." }, { status: 400 });
   }
@@ -55,19 +52,15 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
 
-  const target = Users.get(steamId);
-  if (!target) {
-    return NextResponse.json({ error: "User not found." }, { status: 404 });
-  }
+  const target = await Users.get(steamId);
+  if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
 
   if (steamId === me.steam_id && role !== "admin") {
     return NextResponse.json({ error: "You cannot remove your own admin access." }, { status: 400 });
   }
 
-  const updated = Users.setRole(steamId, role);
-  if (!updated) {
-    return NextResponse.json({ error: "Update failed." }, { status: 500 });
-  }
+  const updated = await Users.setRole(steamId, role);
+  if (!updated) return NextResponse.json({ error: "Update failed." }, { status: 500 });
 
   return NextResponse.json({ user: serializeUser(updated) });
 }

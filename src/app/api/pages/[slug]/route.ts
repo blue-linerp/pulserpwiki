@@ -1,3 +1,7 @@
+/**
+ * src/app/api/wiki/[slug]/route.ts
+ * Save / delete wiki pages — now async with Turso.
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { Pages } from "@/lib/db";
@@ -6,12 +10,8 @@ import type { WikiPage } from "@/data/types";
 
 export const dynamic = "force-dynamic";
 
-function ok(data: unknown) {
-  return NextResponse.json(data);
-}
-function fail(msg: string, status = 400) {
-  return NextResponse.json({ error: msg }, { status });
-}
+function ok(data: unknown) { return NextResponse.json(data); }
+function fail(msg: string, status = 400) { return NextResponse.json({ error: msg }, { status }); }
 
 function validatePage(input: unknown): WikiPage | string {
   if (!input || typeof input !== "object") return "Body must be an object.";
@@ -74,15 +74,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const me = getCurrentUser();
+  const me = await getCurrentUser();
   if (!me || me.role !== "admin") return fail("Forbidden", 403);
 
   let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return fail("Invalid JSON.");
-  }
+  try { body = await req.json(); } catch { return fail("Invalid JSON."); }
   const result = validatePage(body);
   if (typeof result === "string") return fail(result);
 
@@ -91,12 +87,12 @@ export async function POST(
   const page: WikiPage = { ...result, slug: targetSlug };
 
   const isCustom = !getStaticPage(targetSlug);
-  Pages.upsert(targetSlug, page, isCustom, me.steam_id);
-  Pages.unhideStatic(targetSlug);
+  await Pages.upsert(targetSlug, page, isCustom, me.steam_id);
+  await Pages.unhideStatic(targetSlug);
   if (oldSlug !== targetSlug) {
-    Pages.delete(oldSlug);
+    await Pages.delete(oldSlug);
     if (getStaticPage(oldSlug)) {
-      Pages.hideStatic(oldSlug, me.steam_id);
+      await Pages.hideStatic(oldSlug, me.steam_id);
     }
   }
 
@@ -107,16 +103,15 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const me = getCurrentUser();
+  const me = await getCurrentUser();
   if (!me || me.role !== "admin") return fail("Forbidden", 403);
 
-  const row = Pages.get(params.slug);
+  const row = await Pages.get(params.slug);
   if (!row) return fail("Not found.", 404);
   if (row.is_custom !== 1) {
-    // For built-in pages just clear the override (revert to static).
-    Pages.delete(params.slug);
+    await Pages.delete(params.slug);
     return ok({ ok: true, reverted: true });
   }
-  Pages.delete(params.slug);
+  await Pages.delete(params.slug);
   return ok({ ok: true, deleted: true });
 }

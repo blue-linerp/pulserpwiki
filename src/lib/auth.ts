@@ -1,10 +1,14 @@
+/**
+ * auth.ts — async version for Turso
+ * Drop this at  src/lib/auth.ts
+ */
 import { getSessionCookie } from "./session";
 import { Users, type DbUser } from "./db";
 
-export function getCurrentUser(): DbUser | null {
+export async function getCurrentUser(): Promise<DbUser | null> {
   const s = getSessionCookie();
   if (!s) return null;
-  const user = Users.get(s.steam_id);
+  const user = await Users.get(s.steam_id);
   if (user) return user;
   if (s.role) {
     return {
@@ -19,8 +23,8 @@ export function getCurrentUser(): DbUser | null {
   return null;
 }
 
-export function requireAdmin(): DbUser {
-  const u = getCurrentUser();
+export async function requireAdmin(): Promise<DbUser> {
+  const u = await getCurrentUser();
   if (!u || u.role !== "admin") {
     throw new Response("Forbidden", { status: 403 });
   }

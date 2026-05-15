@@ -7,7 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3"],
+    // better-sqlite3 is only used locally now (migrate script); remove from
+    // serverComponentsExternalPackages so Vercel doesn't try to bundle it.
+    serverComponentsExternalPackages: [],
   },
   webpack(config) {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
