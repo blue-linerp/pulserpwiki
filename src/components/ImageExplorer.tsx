@@ -40,7 +40,7 @@ function formatDate(ms: number): string {
 }
 
 function wikiMarkup(file: UploadedFile): string {
-  return `[[File:${file.name}|120px|center]]`;
+  return `[[File:${file.url}|120px|center]]`;
 }
 
 export default function ImageExplorer() {
