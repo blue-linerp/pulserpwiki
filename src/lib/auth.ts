@@ -9,9 +9,9 @@ export function getCurrentUser(): DbUser | null {
   if (s.role) {
     return {
       steam_id: s.steam_id,
-      persona: null,
-      avatar: null,
-      profile_url: null,
+      persona: s.persona ?? null,
+      avatar: s.avatar ?? null,
+      profile_url: s.profile_url ?? null,
       role: s.role,
       created_at: 0,
     };

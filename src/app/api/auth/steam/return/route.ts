@@ -21,7 +21,14 @@ export async function GET(req: NextRequest) {
     role: "user",
   });
 
-  const token = encodeSession({ steam_id: steamId, role: user.role, iat: Math.floor(Date.now() / 1000) });
+  const token = encodeSession({
+    steam_id: steamId,
+    persona: user.persona,
+    avatar: user.avatar,
+    profile_url: user.profile_url,
+    role: user.role,
+    iat: Math.floor(Date.now() / 1000),
+  });
   const res = NextResponse.redirect(`${siteUrl()}/?login=ok`);
   res.headers.append("Set-Cookie", buildSetCookie(token));
   return res;

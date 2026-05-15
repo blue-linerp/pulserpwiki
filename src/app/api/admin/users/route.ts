@@ -22,9 +22,14 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const users = Users.all();
+  if (!users.some((user) => user.steam_id === me.steam_id)) {
+    users.unshift(me);
+  }
+
   return NextResponse.json({
     currentSteamId: me.steam_id,
-    users: Users.all().map(serializeUser),
+    users: users.map(serializeUser),
   });
 }
 
