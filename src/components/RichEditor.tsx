@@ -831,30 +831,7 @@ function TabBtn({
 
 /* -------------------- Image -------------------- */
 
-interface LibraryFile {
-  name: string;
-  url: string;
-  uploadedAt: number;
-  size: number;
-}
-
-// Module-level cache shared with PageEditor — instant re-opens after first load
-let _libraryCache: LibraryFile[] | null = null;
-let _libraryPromise: Promise<LibraryFile[]> | null = null;
-
-function fetchLibrary(): Promise<LibraryFile[]> {
-  if (_libraryCache) return Promise.resolve(_libraryCache);
-  if (_libraryPromise) return _libraryPromise;
-  _libraryPromise = fetch("/api/uploads", { cache: "no-store" })
-    .then((r) => r.json())
-    .then((d: { files?: LibraryFile[] }) => {
-      _libraryCache = d.files || [];
-      _libraryPromise = null;
-      return _libraryCache!;
-    })
-    .catch(() => { _libraryPromise = null; return []; });
-  return _libraryPromise;
-}
+import { type LibraryFile, fetchLibrary, getLibraryCache } from "@/lib/libraryCache";
 
 function ImageLibraryModal({
   onSelect,
@@ -868,7 +845,7 @@ function ImageLibraryModal({
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (_libraryCache) { setFiles(_libraryCache); setLoading(false); return; }
+    const cached = getLibraryCache(); if (cached) { setFiles(cached); setLoading(false); return; }
     fetchLibrary().then((f) => { setFiles(f); setLoading(false); });
   }, []);
 
