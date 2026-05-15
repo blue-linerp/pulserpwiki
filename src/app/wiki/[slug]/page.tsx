@@ -1,5 +1,5 @@
 import Layout from "@/components/Layout";
-import WikiArticle from "@/components/WikiArticle";
+import WikiArticle, { resolveRelatedPages } from "@/components/WikiArticle";
 import { getPage, getAllPages, getCustomPagesByCategory } from "@/data/pages/server";
 import { notFound } from "next/navigation";
 import RecentChanges from "@/components/RecentChanges";
@@ -62,9 +62,10 @@ export default async function WikiPage({ params }: { params: { slug: string } })
     }
   }
 
+  const relatedPages = await resolveRelatedPages(page);
   return (
     <Layout>
-      <WikiArticle page={page} />
+      <WikiArticle page={page} relatedPages={relatedPages} />
       {extra}
     </Layout>
   );

@@ -12,7 +12,6 @@ import { getPage } from "@/data/pages/server";
 
 const DEPARTMENTS_LOGO = "/uploads/1778868250233-291a3b9a8adf.png";
 
-/** Extracts h2 heading text from an HTML string (strips any inline tags). */
 function extractHeadings(html: string): string[] {
   const matches = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/gi)];
   return matches
@@ -29,7 +28,6 @@ function extractHeadings(html: string): string[] {
     .filter(Boolean);
 }
 
-/** Pulls the leading `<div class="wiki-notice">...</div>` out of an HTML string. */
 function splitNotice(html: string): { notice: string | null; rest: string } {
   const m = html.match(/<div\b[^>]*class="[^"]*\bwiki-notice\b[^"]*"[^>]*>/i);
   if (!m || m.index === undefined) return { notice: null, rest: html };
@@ -40,43 +38,29 @@ function splitNotice(html: string): { notice: string | null; rest: string } {
   let endIdx = -1;
   let t: RegExpExecArray | null;
   while ((t = tagRe.exec(html))) {
-    if (t[1]) {
-      depth--;
-      if (depth === 0) { endIdx = t.index + t[0].length; break; }
-    } else {
-      depth++;
-    }
+    if (t[1]) { depth--; if (depth === 0) { endIdx = t.index + t[0].length; break; } }
+    else { depth++; }
   }
   if (endIdx === -1) return { notice: null, rest: html };
-  return {
-    notice: html.slice(startIdx, endIdx),
-    rest: html.slice(0, startIdx) + html.slice(endIdx),
-  };
+  return { notice: html.slice(startIdx, endIdx), rest: html.slice(0, startIdx) + html.slice(endIdx) };
 }
 
-function makeRenderBody(
-  index: Map<string, string>,
-  currentSlug: string
-) {
+function makeRenderBody(index: Map<string, string>, currentSlug: string) {
   return function renderBody(lines: string[]) {
-    // Group consecutive "- " lines into a list, otherwise paragraphs.
     const out: { type: "p" | "ul"; content: string[] }[] = [];
     for (const raw of lines) {
-      const line = raw;
-      if (line.startsWith("- ")) {
+      if (raw.startsWith("- ")) {
         const last = out[out.length - 1];
-        if (last && last.type === "ul") last.content.push(line.slice(2));
-        else out.push({ type: "ul", content: [line.slice(2)] });
+        if (last && last.type === "ul") last.content.push(raw.slice(2));
+        else out.push({ type: "ul", content: [raw.slice(2)] });
       } else {
-        out.push({ type: "p", content: [line] });
+        out.push({ type: "p", content: [raw] });
       }
     }
     return out.map((b, i) =>
       b.type === "ul" ? (
         <ul key={i}>
-          {b.content.map((c, j) => (
-            <li key={j}>{autoLink(c, index, currentSlug)}</li>
-          ))}
+          {b.content.map((c, j) => <li key={j}>{autoLink(c, index, currentSlug)}</li>)}
         </ul>
       ) : (
         <p key={i}>{autoLink(b.content[0], index, currentSlug)}</p>
@@ -85,25 +69,45 @@ function makeRenderBody(
   };
 }
 
-export default function WikiArticle({ page }: { page: WikiPage }) {
+export interface ResolvedRelated {
+  slug: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+}
+
+/** Server helper — call this from your async page components. */
+export async function resolveRelatedPages(page: WikiPage): Promise<ResolvedRelated[]> {
+  return Promise.all(
+    page.related.map(async (r) => {
+      const relatedPage = await getPage(r.slug);
+      return {
+        slug: r.slug,
+        title: r.title,
+        subtitle: relatedPage?.subtitle || relatedPage?.description,
+        imageUrl: relatedPage?.infobox?.imageUrl || relatedPage?.imageUrl,
+      };
+    })
+  );
+}
+
+export default function WikiArticle({
+  page,
+  relatedPages,
+}: {
+  page: WikiPage;
+  relatedPages: ResolvedRelated[];
+}) {
   const headings = page.content?.trim()
     ? extractHeadings(page.content)
     : page.sections.map((s) => s.heading);
   const linkIndex = buildTitleIndex();
   const renderBody = makeRenderBody(linkIndex, page.slug);
-  const relatedPages = page.related.map((r) => {
-    const relatedPage = getPage(r.slug);
-    return {
-      ...r,
-      subtitle: relatedPage?.subtitle || relatedPage?.description,
-      imageUrl: relatedPage?.infobox?.imageUrl || relatedPage?.imageUrl,
-    };
-  });
+
   return (
     <article className="space-y-5">
       <Breadcrumbs items={[{ label: page.category, href: "/" }, { label: page.title }]} />
 
-      {/* Header */}
       <header className="border-b border-line pb-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -128,11 +132,7 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
 
       {page.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={page.imageUrl}
-          alt={page.title}
-          className="w-full max-h-[360px] object-cover rounded-md border border-line"
-        />
+        <img src={page.imageUrl} alt={page.title} className="w-full max-h-[360px] object-cover rounded-md border border-line" />
       )}
 
       <div className={`grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6${(page.content || "").includes("data-wiki-notice") ? " has-notice-grid" : ""}`}>
@@ -142,39 +142,24 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
             const { notice, rest } = splitNotice(linked);
             return (
               <>
-                {notice && (
-                  <div
-                    className="wiki-prose tiptap-output"
-                    dangerouslySetInnerHTML={{ __html: notice }}
-                  />
-                )}
+                {notice && <div className="wiki-prose tiptap-output" dangerouslySetInnerHTML={{ __html: notice }} />}
                 <TableOfContents headings={headings} />
                 <div className="clear-both" />
-                <div
-                  className="wiki-prose tiptap-output"
-                  dangerouslySetInnerHTML={{ __html: rest }}
-                />
+                <div className="wiki-prose tiptap-output" dangerouslySetInnerHTML={{ __html: rest }} />
                 <div className="clear-both" />
               </>
             );
           })() : (
             <>
-              {/* Intro */}
               {page.intro && (
                 <div className="wiki-prose">
                   {page.intro.map((p, i) => (
-                    <p key={i} className="text-[15.5px] text-zinc-200">
-                      {autoLink(p, linkIndex, page.slug)}
-                    </p>
+                    <p key={i} className="text-[15.5px] text-zinc-200">{autoLink(p, linkIndex, page.slug)}</p>
                   ))}
                 </div>
               )}
-
-              {/* TOC — floated left, inline with sections */}
               <TableOfContents headings={headings} />
               <div className="clear-both" />
-
-              {/* Sections */}
               <div className="wiki-prose mt-2">
                 {page.sections.map((s) => (
                   <section key={s.heading} id={slugify(s.heading)} className="scroll-mt-24">
@@ -187,8 +172,7 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
             </>
           )}
 
-          {/* Related */}
-          {page.related.length > 0 && (
+          {relatedPages.length > 0 && (
             <section className="mt-10">
               <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
                 Related Pages
@@ -199,26 +183,17 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
                   const imageUrl = r.slug === "departments" ? DEPARTMENTS_LOGO : r.imageUrl;
                   return (
                     <li key={r.slug}>
-                      <Link
-                        href={`/wiki/${r.slug}`}
-                        className="block panel p-3 hover:border-pulse-700/60 hover:bg-panel2 transition"
-                      >
+                      <Link href={`/wiki/${r.slug}`} className="block panel p-3 hover:border-pulse-700/60 hover:bg-panel2 transition">
                         <div className="flex items-center gap-3">
                           {imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={imageUrl}
-                            alt=""
-                            className="w-12 h-12 rounded object-cover border border-line shrink-0"
-                          />
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imageUrl} alt="" className="w-12 h-12 rounded object-cover border border-line shrink-0" />
                           ) : (
                             <div className="w-12 h-12 rounded bg-panel2 border border-line shrink-0" />
                           )}
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-white truncate">{r.title}</div>
-                            <div className="text-[11px] text-zinc-500 truncate">
-                              {r.subtitle || `/wiki/${r.slug}`}
-                            </div>
+                            <div className="text-[11px] text-zinc-500 truncate">{r.subtitle || `/wiki/${r.slug}`}</div>
                           </div>
                         </div>
                       </Link>
@@ -229,21 +204,16 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
             </section>
           )}
 
-          {/* Tags */}
           <div className="mt-10 pt-4 border-t border-line flex items-center flex-wrap gap-2">
             <Tag className="w-4 h-4 text-zinc-500" />
             {page.tags.map((t) => (
-              <span
-                key={t}
-                className="text-[11px] uppercase tracking-wider px-2 py-1 rounded border border-line bg-panel2 text-zinc-300"
-              >
+              <span key={t} className="text-[11px] uppercase tracking-wider px-2 py-1 rounded border border-line bg-panel2 text-zinc-300">
                 {t}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Right column */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           {page.infobox && <WikiInfobox box={page.infobox} currentSlug={page.slug} />}
         </aside>
@@ -251,4 +221,3 @@ export default function WikiArticle({ page }: { page: WikiPage }) {
     </article>
   );
 }
-
