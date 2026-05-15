@@ -5,8 +5,8 @@ import AdminUsersManager from "@/components/AdminUsersManager";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminUsersPage() {
-  const me = getCurrentUser();
+export default async function AdminUsersPage() {
+  const me = await getCurrentUser();
   if (!me) redirect("/api/auth/steam");
   if (me.role !== "admin") {
     return (
@@ -18,7 +18,6 @@ export default function AdminUsersPage() {
       </Layout>
     );
   }
-
   return (
     <Layout>
       <AdminUsersManager />

@@ -5,8 +5,8 @@ import ImageExplorer from "@/components/ImageExplorer";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminImagesPage() {
-  const me = getCurrentUser();
+export default async function AdminImagesPage() {
+  const me = await getCurrentUser();
   if (!me) redirect("/api/auth/steam");
   if (me.role !== "admin") {
     return (
