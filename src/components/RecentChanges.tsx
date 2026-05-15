@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { Activity } from "lucide-react";
 import { db, ensureSchema } from "@/lib/db";
-import type { DbUser } from "@/lib/db";
 
 interface RecentChange {
   title: string;
   slug: string;
   updatedAt: number;
-  updatedBy: string | null;
   persona: string | null;
+  summary: string | null;
 }
 
 async function getRecentChanges(limit = 10): Promise<RecentChange[]> {
@@ -16,10 +15,8 @@ async function getRecentChanges(limit = 10): Promise<RecentChange[]> {
 
   const [pagesRes, usersRes] = await Promise.all([
     db.execute(
-      `SELECT slug, data, updated_at, updated_by
-       FROM pages
-       ORDER BY updated_at DESC
-       LIMIT ${limit}`
+      `SELECT slug, data, updated_at, updated_by, summary
+       FROM pages ORDER BY updated_at DESC LIMIT ${limit}`
     ),
     db.execute("SELECT steam_id, persona FROM users"),
   ]);
@@ -40,14 +37,9 @@ async function getRecentChanges(limit = 10): Promise<RecentChange[]> {
 
     const updatedBy = row.updated_by ? String(row.updated_by) : null;
     const persona = updatedBy ? (userMap.get(updatedBy) ?? updatedBy) : null;
+    const summary = row.summary ? String(row.summary) : null;
 
-    return {
-      title,
-      slug: String(row.slug),
-      updatedAt: Number(row.updated_at),
-      updatedBy,
-      persona,
-    };
+    return { title, slug: String(row.slug), updatedAt: Number(row.updated_at), persona, summary };
   });
 }
 
@@ -93,10 +85,11 @@ export default async function RecentChanges({ limit = 6 }: { limit?: number }) {
                 >
                   {c.title}
                 </Link>
-                <span className="shrink-0 text-[11px] text-zinc-500">
-                  {timeAgo(c.updatedAt)}
-                </span>
+                <span className="shrink-0 text-[11px] text-zinc-500">{timeAgo(c.updatedAt)}</span>
               </div>
+              {c.summary && (
+                <p className="text-xs text-zinc-400 mt-0.5">{c.summary}</p>
+              )}
               {c.persona && (
                 <p className="text-[11px] text-zinc-600 mt-0.5">
                   edited by <span className="text-zinc-400">{c.persona}</span>

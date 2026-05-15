@@ -1,8 +1,3 @@
-/**
- * db.ts — Turso (libSQL) replacement for better-sqlite3
- * Drop this file at  src/lib/db.ts
- */
-
 import { createClient, type Client } from "@libsql/client";
 
 declare global {
@@ -46,7 +41,8 @@ export async function ensureSchema(): Promise<void> {
       data       TEXT NOT NULL,
       is_custom  INTEGER NOT NULL DEFAULT 0,
       updated_at INTEGER NOT NULL,
-      updated_by TEXT
+      updated_by TEXT,
+      summary    TEXT
     );
     CREATE TABLE IF NOT EXISTS hidden_pages (
       slug       TEXT PRIMARY KEY,
@@ -54,6 +50,12 @@ export async function ensureSchema(): Promise<void> {
       hidden_by  TEXT
     );
   `);
+  // Add summary column if upgrading from older schema
+  try {
+    await db.execute("ALTER TABLE pages ADD COLUMN summary TEXT");
+  } catch {
+    // Column already exists — ignore
+  }
   schemaReady = true;
 }
 
@@ -72,6 +74,7 @@ export interface DbPageRow {
   is_custom: 0 | 1;
   updated_at: number;
   updated_by: string | null;
+  summary: string | null;
 }
 
 export interface DbHiddenRow {
@@ -98,6 +101,7 @@ function rowToPage(row: any): DbPageRow {
     is_custom: Number(row.is_custom) as 0 | 1,
     updated_at: Number(row.updated_at),
     updated_by: row.updated_by != null ? String(row.updated_by) : null,
+    summary: row.summary != null ? String(row.summary) : null,
   };
 }
 
@@ -148,44 +152,37 @@ export const Pages = {
     const r = await db.execute({ sql: "SELECT * FROM pages WHERE slug = ?", args: [slug] });
     return r.rows[0] ? rowToPage(r.rows[0]) : undefined;
   },
-
-  // Fetch ALL page rows in one query — used by getAllPages() to avoid N+1
   async allRows(): Promise<DbPageRow[]> {
     await ensureSchema();
     const r = await db.execute("SELECT * FROM pages");
     return r.rows.map(rowToPage);
   },
-
-  // Fetch ALL hidden slugs in one query
   async allHidden(): Promise<DbHiddenRow[]> {
     await ensureSchema();
     const r = await db.execute("SELECT slug FROM hidden_pages");
     return r.rows.map((row) => ({ slug: String(row.slug) }));
   },
-
-  async upsert(slug: string, data: unknown, isCustom: boolean, updatedBy: string): Promise<void> {
+  async upsert(slug: string, data: unknown, isCustom: boolean, updatedBy: string, summary?: string): Promise<void> {
     await ensureSchema();
     const row = await Pages.get(slug);
     const now = Date.now();
     const json = JSON.stringify(data);
     if (row) {
       await db.execute({
-        sql: "UPDATE pages SET data=?, updated_at=?, updated_by=? WHERE slug=?",
-        args: [json, now, updatedBy, slug],
+        sql: "UPDATE pages SET data=?, updated_at=?, updated_by=?, summary=? WHERE slug=?",
+        args: [json, now, updatedBy, summary ?? null, slug],
       });
     } else {
       await db.execute({
-        sql: "INSERT INTO pages(slug, data, is_custom, updated_at, updated_by) VALUES (?,?,?,?,?)",
-        args: [slug, json, isCustom ? 1 : 0, now, updatedBy],
+        sql: "INSERT INTO pages(slug, data, is_custom, updated_at, updated_by, summary) VALUES (?,?,?,?,?,?)",
+        args: [slug, json, isCustom ? 1 : 0, now, updatedBy, summary ?? null],
       });
     }
   },
-
   async delete(slug: string): Promise<void> {
     await ensureSchema();
     await db.execute({ sql: "DELETE FROM pages WHERE slug=?", args: [slug] });
   },
-
   async hideStatic(slug: string, hiddenBy: string): Promise<void> {
     await ensureSchema();
     await db.execute({
@@ -194,24 +191,20 @@ export const Pages = {
       args: [slug, Date.now(), hiddenBy],
     });
   },
-
   async unhideStatic(slug: string): Promise<void> {
     await ensureSchema();
     await db.execute({ sql: "DELETE FROM hidden_pages WHERE slug=?", args: [slug] });
   },
-
   async isHidden(slug: string): Promise<boolean> {
     await ensureSchema();
     const r = await db.execute({ sql: "SELECT slug FROM hidden_pages WHERE slug=?", args: [slug] });
     return r.rows.length > 0;
   },
-
   async allCustom(): Promise<DbPageRow[]> {
     await ensureSchema();
     const r = await db.execute("SELECT * FROM pages WHERE is_custom=1 ORDER BY updated_at DESC");
     return r.rows.map(rowToPage);
   },
-
   async byCategory(category: string): Promise<DbPageRow[]> {
     await ensureSchema();
     const r = await db.execute("SELECT * FROM pages WHERE is_custom=1");
