@@ -870,6 +870,99 @@ function InfoboxModal({
   );
 }
 
+interface LibraryFile {
+  name: string;
+  url: string;
+  uploadedAt: number;
+  size: number;
+}
+
+function ImageLibraryModal({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (url: string) => void;
+  onClose: () => void;
+}) {
+  const [files, setFiles] = useState<LibraryFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetch("/api/uploads", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { files?: LibraryFile[] }) => setFiles(d.files || []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = files.filter((f) =>
+    f.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[80vh] bg-panel border border-line rounded-lg shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="px-4 py-3 border-b border-line flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-pulse-500" />
+            <h3 className="font-display font-semibold text-white text-sm">Select from Library</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="pl-7 pr-3 py-1.5 text-xs bg-panel2 border border-line rounded-md text-zinc-200 focus:outline-none focus:border-pulse-600/60 w-40"
+              />
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded border border-line text-zinc-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto p-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-zinc-500">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading…
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-zinc-500 text-sm py-12">No images found.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {filtered.map((f) => (
+                <button
+                  key={f.url}
+                  type="button"
+                  onClick={() => { onSelect(f.url); onClose(); }}
+                  className="group relative aspect-square bg-panel2 border border-line rounded overflow-hidden hover:border-pulse-500/60 transition"
+                  title={f.name}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={f.url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-end p-1">
+                    <span className="text-[9px] text-white/0 group-hover:text-white/90 truncate w-full transition leading-tight">
+                      {f.name.split("/").pop()}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImageInput({
   url,
   onChange,
@@ -880,6 +973,7 @@ function ImageInput({
   upload: (file: File) => Promise<string | null>;
 }) {
   const [busy, setBusy] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const isGallery = url?.trim().toLowerCase().startsWith("<gallery");
   return (
     <div className="space-y-2">
@@ -889,7 +983,7 @@ function ImageInput({
         className={`${input} min-h-[42px] resize-y`}
         placeholder="/uploads/your-image.jpg, external URL, or <gallery>...</gallery>"
       />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-line bg-panel2 hover:border-pulse-700/60 text-zinc-200 cursor-pointer">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
           Upload image
@@ -908,6 +1002,13 @@ function ImageInput({
             }}
           />
         </label>
+        <button
+          type="button"
+          onClick={() => setLibraryOpen(true)}
+          className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-line bg-panel2 hover:border-pulse-700/60 text-zinc-200"
+        >
+          <ImageIcon className="w-3.5 h-3.5" /> Select from Library
+        </button>
         {url && !isGallery && (
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -935,8 +1036,13 @@ function ImageInput({
             </button>
           </div>
         )}
-        {!url && <ImageIcon className="w-4 h-4 text-zinc-600" />}
       </div>
+      {libraryOpen && (
+        <ImageLibraryModal
+          onSelect={(u) => onChange(u)}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
     </div>
   );
 }
