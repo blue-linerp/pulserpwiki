@@ -1,16 +1,9 @@
 /**
  * db.ts — Turso (libSQL) replacement for better-sqlite3
- *
- * Drop this file in at  src/lib/db.ts
- *
- * Env vars needed (set in Vercel dashboard):
- *   TURSO_DATABASE_URL   e.g. libsql://your-db.turso.io
- *   TURSO_AUTH_TOKEN     the token from `turso db tokens create <db-name>`
+ * Drop this file at  src/lib/db.ts
  */
 
 import { createClient, type Client } from "@libsql/client";
-
-// ─── singleton client ────────────────────────────────────────────────────────
 
 declare global {
   // eslint-disable-next-line no-var
@@ -20,15 +13,10 @@ declare global {
 function makeClient(): Client {
   const url = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
-
   if (!url) throw new Error("TURSO_DATABASE_URL is not set.");
-
-  // Local dev: if no auth token, fall back to a local file so you don't need
-  // a Turso account just to run `npm run dev`.
   if (!authToken && process.env.NODE_ENV !== "production") {
     return createClient({ url: "file:data/wiki.db" });
   }
-
   return createClient({ url, authToken });
 }
 
@@ -39,8 +27,6 @@ export const db: Client =
     if (process.env.NODE_ENV !== "production") global.__pulse_db = client;
     return client;
   })();
-
-// ─── schema bootstrap ────────────────────────────────────────────────────────
 
 let schemaReady = false;
 
@@ -55,7 +41,6 @@ export async function ensureSchema(): Promise<void> {
       role        TEXT NOT NULL DEFAULT 'user',
       created_at  INTEGER NOT NULL
     );
-
     CREATE TABLE IF NOT EXISTS pages (
       slug       TEXT PRIMARY KEY,
       data       TEXT NOT NULL,
@@ -63,7 +48,6 @@ export async function ensureSchema(): Promise<void> {
       updated_at INTEGER NOT NULL,
       updated_by TEXT
     );
-
     CREATE TABLE IF NOT EXISTS hidden_pages (
       slug       TEXT PRIMARY KEY,
       hidden_at  INTEGER NOT NULL,
@@ -72,8 +56,6 @@ export async function ensureSchema(): Promise<void> {
   `);
   schemaReady = true;
 }
-
-// ─── types ───────────────────────────────────────────────────────────────────
 
 export interface DbUser {
   steam_id: string;
@@ -92,7 +74,32 @@ export interface DbPageRow {
   updated_by: string | null;
 }
 
-// ─── Users ───────────────────────────────────────────────────────────────────
+export interface DbHiddenRow {
+  slug: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToUser(row: any): DbUser {
+  return {
+    steam_id: String(row.steam_id),
+    persona: row.persona != null ? String(row.persona) : null,
+    avatar: row.avatar != null ? String(row.avatar) : null,
+    profile_url: row.profile_url != null ? String(row.profile_url) : null,
+    role: String(row.role) as "admin" | "user",
+    created_at: Number(row.created_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToPage(row: any): DbPageRow {
+  return {
+    slug: String(row.slug),
+    data: String(row.data),
+    is_custom: Number(row.is_custom) as 0 | 1,
+    updated_at: Number(row.updated_at),
+    updated_by: row.updated_by != null ? String(row.updated_by) : null,
+  };
+}
 
 export const Users = {
   async count(): Promise<number> {
@@ -100,38 +107,22 @@ export const Users = {
     const r = await db.execute("SELECT COUNT(*) as c FROM users");
     return Number(r.rows[0]?.c ?? 0);
   },
-
   async get(steamId: string): Promise<DbUser | undefined> {
     await ensureSchema();
-    const r = await db.execute({
-      sql: "SELECT * FROM users WHERE steam_id = ?",
-      args: [steamId],
-    });
-    const row = r.rows[0];
-    if (!row) return undefined;
-    return rowToUser(row);
+    const r = await db.execute({ sql: "SELECT * FROM users WHERE steam_id = ?", args: [steamId] });
+    return r.rows[0] ? rowToUser(r.rows[0]) : undefined;
   },
-
   async all(): Promise<DbUser[]> {
     await ensureSchema();
-    const r = await db.execute(
-      "SELECT * FROM users ORDER BY created_at DESC"
-    );
+    const r = await db.execute("SELECT * FROM users ORDER BY created_at DESC");
     return r.rows.map(rowToUser);
   },
-
   async setRole(steamId: string, role: "admin" | "user"): Promise<DbUser | undefined> {
     await ensureSchema();
-    await db.execute({
-      sql: "UPDATE users SET role=? WHERE steam_id=?",
-      args: [role, steamId],
-    });
+    await db.execute({ sql: "UPDATE users SET role=? WHERE steam_id=?", args: [role, steamId] });
     return Users.get(steamId);
   },
-
-  async upsert(
-    u: Omit<DbUser, "created_at"> & { created_at?: number }
-  ): Promise<DbUser> {
+  async upsert(u: Omit<DbUser, "created_at"> & { created_at?: number }): Promise<DbUser> {
     await ensureSchema();
     const existing = await Users.get(u.steam_id);
     if (existing) {
@@ -141,8 +132,7 @@ export const Users = {
       });
       return (await Users.get(u.steam_id))!;
     }
-    const role: "admin" | "user" =
-      (await Users.count()) === 0 ? "admin" : u.role || "user";
+    const role: "admin" | "user" = (await Users.count()) === 0 ? "admin" : u.role || "user";
     const created_at = Date.now();
     await db.execute({
       sql: "INSERT INTO users(steam_id, persona, avatar, profile_url, role, created_at) VALUES (?,?,?,?,?,?)",
@@ -152,26 +142,28 @@ export const Users = {
   },
 };
 
-// ─── Pages ───────────────────────────────────────────────────────────────────
-
 export const Pages = {
   async get(slug: string): Promise<DbPageRow | undefined> {
     await ensureSchema();
-    const r = await db.execute({
-      sql: "SELECT * FROM pages WHERE slug = ?",
-      args: [slug],
-    });
-    const row = r.rows[0];
-    if (!row) return undefined;
-    return rowToPage(row);
+    const r = await db.execute({ sql: "SELECT * FROM pages WHERE slug = ?", args: [slug] });
+    return r.rows[0] ? rowToPage(r.rows[0]) : undefined;
   },
 
-  async upsert(
-    slug: string,
-    data: unknown,
-    isCustom: boolean,
-    updatedBy: string
-  ): Promise<void> {
+  // Fetch ALL page rows in one query — used by getAllPages() to avoid N+1
+  async allRows(): Promise<DbPageRow[]> {
+    await ensureSchema();
+    const r = await db.execute("SELECT * FROM pages");
+    return r.rows.map(rowToPage);
+  },
+
+  // Fetch ALL hidden slugs in one query
+  async allHidden(): Promise<DbHiddenRow[]> {
+    await ensureSchema();
+    const r = await db.execute("SELECT slug FROM hidden_pages");
+    return r.rows.map((row) => ({ slug: String(row.slug) }));
+  },
+
+  async upsert(slug: string, data: unknown, isCustom: boolean, updatedBy: string): Promise<void> {
     await ensureSchema();
     const row = await Pages.get(slug);
     const now = Date.now();
@@ -205,66 +197,29 @@ export const Pages = {
 
   async unhideStatic(slug: string): Promise<void> {
     await ensureSchema();
-    await db.execute({
-      sql: "DELETE FROM hidden_pages WHERE slug=?",
-      args: [slug],
-    });
+    await db.execute({ sql: "DELETE FROM hidden_pages WHERE slug=?", args: [slug] });
   },
 
   async isHidden(slug: string): Promise<boolean> {
     await ensureSchema();
-    const r = await db.execute({
-      sql: "SELECT slug FROM hidden_pages WHERE slug=?",
-      args: [slug],
-    });
+    const r = await db.execute({ sql: "SELECT slug FROM hidden_pages WHERE slug=?", args: [slug] });
     return r.rows.length > 0;
   },
 
   async allCustom(): Promise<DbPageRow[]> {
     await ensureSchema();
-    const r = await db.execute(
-      "SELECT * FROM pages WHERE is_custom=1 ORDER BY updated_at DESC"
-    );
+    const r = await db.execute("SELECT * FROM pages WHERE is_custom=1 ORDER BY updated_at DESC");
     return r.rows.map(rowToPage);
   },
 
   async byCategory(category: string): Promise<DbPageRow[]> {
     await ensureSchema();
-    const r = await db.execute(
-      "SELECT * FROM pages WHERE is_custom=1"
-    );
+    const r = await db.execute("SELECT * FROM pages WHERE is_custom=1");
     return r.rows.map(rowToPage).filter((row) => {
       try {
         const d = JSON.parse(row.data);
         return (d.category || "").toLowerCase() === category.toLowerCase();
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     });
   },
 };
-
-// ─── row mappers ─────────────────────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToUser(row: any): DbUser {
-  return {
-    steam_id: String(row.steam_id),
-    persona: row.persona != null ? String(row.persona) : null,
-    avatar: row.avatar != null ? String(row.avatar) : null,
-    profile_url: row.profile_url != null ? String(row.profile_url) : null,
-    role: (String(row.role) as "admin" | "user"),
-    created_at: Number(row.created_at),
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToPage(row: any): DbPageRow {
-  return {
-    slug: String(row.slug),
-    data: String(row.data),
-    is_custom: Number(row.is_custom) as 0 | 1,
-    updated_at: Number(row.updated_at),
-    updated_by: row.updated_by != null ? String(row.updated_by) : null,
-  };
-}

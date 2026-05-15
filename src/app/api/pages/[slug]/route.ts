@@ -1,8 +1,5 @@
-/**
- * src/app/api/wiki/[slug]/route.ts
- * Save / delete wiki pages — now async with Turso.
- */
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { Pages } from "@/lib/db";
 import { getStaticPage } from "@/data/pages/server";
@@ -96,6 +93,7 @@ export async function POST(
     }
   }
 
+  revalidateTag("wiki-pages");
   return ok({ ok: true, slug: targetSlug });
 }
 
@@ -110,8 +108,10 @@ export async function DELETE(
   if (!row) return fail("Not found.", 404);
   if (row.is_custom !== 1) {
     await Pages.delete(params.slug);
+    revalidateTag("wiki-pages");
     return ok({ ok: true, reverted: true });
   }
   await Pages.delete(params.slug);
+  revalidateTag("wiki-pages");
   return ok({ ok: true, deleted: true });
 }
