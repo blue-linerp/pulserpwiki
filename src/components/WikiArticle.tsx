@@ -91,7 +91,7 @@ export async function resolveRelatedPages(page: WikiPage): Promise<ResolvedRelat
   );
 }
 
-export default function WikiArticle({
+export default async function WikiArticle({
   page,
   relatedPages,
 }: {
@@ -101,7 +101,7 @@ export default function WikiArticle({
   const headings = page.content?.trim()
     ? extractHeadings(page.content)
     : page.sections.map((s) => s.heading);
-  const linkIndex = buildTitleIndex();
+  const linkIndex = await buildTitleIndex();
   const renderBody = makeRenderBody(linkIndex, page.slug);
 
   return (

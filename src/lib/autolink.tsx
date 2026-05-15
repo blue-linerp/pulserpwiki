@@ -11,24 +11,18 @@ const LINK_NEW =
   "text-pulse-500 hover:text-pulse-400 underline decoration-dashed decoration-pulse-700/60 underline-offset-2";
 
 /**
- * Build a lookup of lowercased title -> slug for all live pages
- * (DB overrides + static). Server-only. Used to distinguish resolved
- * wikilinks from unresolved ones, and to detect self-links.
+ * Build a lookup of lowercased title -> slug for all live pages.
+ * Now async to match the async getAllPages().
  */
-export function buildTitleIndex(): Map<string, string> {
+export async function buildTitleIndex(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  for (const p of getAllPages()) {
+  for (const p of await getAllPages()) {
     const key = p.title.trim().toLowerCase();
     if (key.length >= 3 && !map.has(key)) map.set(key, p.slug);
   }
   return map;
 }
 
-/**
- * Renders text, replacing `[[Page Title]]` and `[[Title|Display]]`
- * patterns with links. Everything outside `[[...]]` is rendered as
- * plain text — only explicit wikilinks become links.
- */
 export function autoLink(
   text: string,
   index: Map<string, string>,
@@ -72,6 +66,5 @@ export function autoLink(
   }
 
   if (lastIndex < text.length) out.push(text.slice(lastIndex));
-
   return out;
 }

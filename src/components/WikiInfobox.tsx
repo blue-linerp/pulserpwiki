@@ -191,14 +191,14 @@ function renderValue(
   return out;
 }
 
-export default function WikiInfobox({
+export default async function WikiInfobox({
   box,
   currentSlug,
 }: {
   box: Infobox;
   currentSlug?: string;
 }) {
-  const index = buildTitleIndex();
+  const index = await buildTitleIndex();
   const fields: InfoboxField[] = box.fields || [];
   const isDepartment = isDepartmentInfobox(box);
   const isBusiness = isBusinessInfobox(box);
