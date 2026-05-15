@@ -25,6 +25,7 @@ function sign(payload: string): string {
 
 export interface SessionData {
   steam_id: string;
+  role?: "admin" | "user";
   iat: number;
 }
 

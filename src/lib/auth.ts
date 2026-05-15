@@ -4,7 +4,19 @@ import { Users, type DbUser } from "./db";
 export function getCurrentUser(): DbUser | null {
   const s = getSessionCookie();
   if (!s) return null;
-  return Users.get(s.steam_id) ?? null;
+  const user = Users.get(s.steam_id);
+  if (user) return user;
+  if (s.role) {
+    return {
+      steam_id: s.steam_id,
+      persona: null,
+      avatar: null,
+      profile_url: null,
+      role: s.role,
+      created_at: 0,
+    };
+  }
+  return null;
 }
 
 export function requireAdmin(): DbUser {
