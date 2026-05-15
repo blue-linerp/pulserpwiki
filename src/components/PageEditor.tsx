@@ -995,14 +995,59 @@ function ImageInput({
 }) {
   const [busy, setBusy] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const isGallery = url?.trim().toLowerCase().startsWith("<gallery");
+
+  function handleContextMenu(e: React.MouseEvent<HTMLTextAreaElement>) {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }
+
   return (
     <div className="space-y-2">
+      {ctxMenu && (
+        <div
+          className="fixed inset-0 z-[70]"
+          onClick={() => setCtxMenu(null)}
+          onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }}
+        >
+          <div
+            className="absolute bg-panel border border-line rounded-md shadow-xl py-1 min-w-[200px] z-[71]"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); setGalleryOpen(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-100"
+            >
+              <ImageIcon className="w-4 h-4 text-pulse-400" /> Build Gallery Slideshow
+            </button>
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); setLibraryOpen(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-100"
+            >
+              <Search className="w-4 h-4 text-zinc-400" /> Select from Library
+            </button>
+            <div className="border-t border-line my-1" />
+            <button
+              type="button"
+              onClick={() => { setCtxMenu(null); onChange(null); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-panel2 text-left text-sm text-zinc-400 hover:text-white"
+            >
+              <X className="w-4 h-4" /> Clear
+            </button>
+          </div>
+        </div>
+      )}
       <textarea
         value={url || ""}
         onChange={(e) => onChange(e.target.value || null)}
+        onContextMenu={handleContextMenu}
         className={`${input} min-h-[42px] resize-y`}
-        placeholder="/uploads/your-image.jpg, external URL, or <gallery>...</gallery>"
+        placeholder="Right-click to build a gallery, or paste a URL directly"
       />
       <div className="flex items-center gap-2 flex-wrap">
         <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-line bg-panel2 hover:border-pulse-700/60 text-zinc-200 cursor-pointer">
@@ -1030,6 +1075,13 @@ function ImageInput({
         >
           <ImageIcon className="w-3.5 h-3.5" /> Select from Library
         </button>
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-pulse-700/40 bg-pulse-900/20 hover:border-pulse-600/60 text-pulse-300"
+        >
+          <Plus className="w-3.5 h-3.5" /> Build Gallery
+        </button>
         {url && !isGallery && (
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1045,16 +1097,14 @@ function ImageInput({
         )}
         {url && isGallery && (
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded border border-line bg-panel2 flex items-center justify-center text-[10px] text-zinc-400">
-              Gallery
-            </div>
             <button
               type="button"
-              onClick={() => onChange(null)}
-              className="text-xs text-zinc-400 hover:text-white"
+              onClick={() => setGalleryOpen(true)}
+              className="text-xs text-pulse-400 hover:text-pulse-300"
             >
-              Clear
+              Edit gallery
             </button>
+            <button type="button" onClick={() => onChange(null)} className="text-xs text-zinc-400 hover:text-white">Clear</button>
           </div>
         )}
       </div>
@@ -1062,6 +1112,13 @@ function ImageInput({
         <ImageLibraryModal
           onSelect={(u) => onChange(u)}
           onClose={() => setLibraryOpen(false)}
+        />
+      )}
+      {galleryOpen && (
+        <GalleryBuilderModal
+          current={url || ""}
+          onChange={(val) => onChange(val || null)}
+          onClose={() => setGalleryOpen(false)}
         />
       )}
     </div>
