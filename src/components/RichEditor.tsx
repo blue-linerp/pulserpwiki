@@ -838,6 +838,24 @@ interface LibraryFile {
   size: number;
 }
 
+// Module-level cache shared with PageEditor — instant re-opens after first load
+let _libraryCache: LibraryFile[] | null = null;
+let _libraryPromise: Promise<LibraryFile[]> | null = null;
+
+function fetchLibrary(): Promise<LibraryFile[]> {
+  if (_libraryCache) return Promise.resolve(_libraryCache);
+  if (_libraryPromise) return _libraryPromise;
+  _libraryPromise = fetch("/api/uploads", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((d: { files?: LibraryFile[] }) => {
+      _libraryCache = d.files || [];
+      _libraryPromise = null;
+      return _libraryCache!;
+    })
+    .catch(() => { _libraryPromise = null; return []; });
+  return _libraryPromise;
+}
+
 function ImageLibraryModal({
   onSelect,
   onClose,
@@ -850,10 +868,8 @@ function ImageLibraryModal({
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch("/api/uploads", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: { files?: LibraryFile[] }) => setFiles(d.files || []))
-      .finally(() => setLoading(false));
+    if (_libraryCache) { setFiles(_libraryCache); setLoading(false); return; }
+    fetchLibrary().then((f) => { setFiles(f); setLoading(false); });
   }, []);
 
   const filtered = files.filter((f) =>
