@@ -24,8 +24,8 @@ interface UploadedFile {
 }
 
 type DeletePrompt =
-  | { type: "single"; name: string }
-  | { type: "bulk"; names: string[] };
+  | { type: "single"; url: string }
+  | { type: "bulk"; urls: string[] };
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -77,18 +77,18 @@ export default function ImageExplorer() {
     return files.filter((f) => f.name.toLowerCase().includes(q));
   }, [files, search]);
 
-  function toggleSelect(name: string) {
+  function toggleSelect(url: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
       return next;
     });
   }
 
   function selectAll() {
     if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((f) => f.name)));
+    else setSelected(new Set(filtered.map((f) => f.url)));
   }
 
   async function uploadFiles(list: FileList | File[]) {
@@ -111,13 +111,13 @@ export default function ImageExplorer() {
     }
   }
 
-  async function deleteOneConfirmed(name: string) {
+  async function deleteOneConfirmed(url: string) {
     setBusyDelete(true);
     try {
       const res = await fetch("/api/uploads", {
         method: "DELETE",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ url }),
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -126,7 +126,7 @@ export default function ImageExplorer() {
       }
       setSelected((prev) => {
         const next = new Set(prev);
-        next.delete(name);
+        next.delete(url);
         return next;
       });
       await load();
@@ -135,20 +135,20 @@ export default function ImageExplorer() {
     }
   }
 
-  async function deleteSelectedConfirmed(names: string[]) {
-    if (!names.length) return;
+  async function deleteSelectedConfirmed(urls: string[]) {
+    if (!urls.length) return;
     if (!selected.size) return;
     setBusyDelete(true);
     try {
-      for (const name of names) {
+      for (const url of urls) {
         const res = await fetch("/api/uploads", {
           method: "DELETE",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({ url }),
         });
         if (!res.ok) {
           const j = (await res.json().catch(() => ({}))) as { error?: string };
-          setError(j.error || `Delete failed for ${name}`);
+          setError(j.error || `Delete failed for ${url}`);
           break;
         }
       }
@@ -171,9 +171,9 @@ export default function ImageExplorer() {
   async function confirmDelete() {
     if (!deletePrompt) return;
     if (deletePrompt.type === "single") {
-      await deleteOneConfirmed(deletePrompt.name);
+      await deleteOneConfirmed(deletePrompt.url);
     } else {
-      await deleteSelectedConfirmed(deletePrompt.names);
+      await deleteSelectedConfirmed(deletePrompt.urls);
     }
     setDeletePrompt(null);
   }
@@ -249,7 +249,7 @@ export default function ImageExplorer() {
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
             <button
-              onClick={() => setDeletePrompt({ type: "bulk", names: Array.from(selected) })}
+              onClick={() => setDeletePrompt({ type: "bulk", urls: Array.from(selected) })}
               disabled={busyDelete}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-crimson/60 bg-crimson/10 text-xs text-red-300 hover:text-white hover:bg-crimson/30 transition disabled:opacity-50"
             >
@@ -301,7 +301,7 @@ export default function ImageExplorer() {
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {filtered.map((f) => {
-              const isSelected = selected.has(f.name);
+              const isSelected = selected.has(f.url);
               return (
                 <div
                   key={f.name}
@@ -310,7 +310,7 @@ export default function ImageExplorer() {
                   }`}
                 >
                   <button
-                    onClick={() => toggleSelect(f.name)}
+                    onClick={() => toggleSelect(f.url)}
                     className="relative w-full aspect-square bg-panel2 border border-line overflow-hidden rounded"
                     title={f.name}
                   >
@@ -345,7 +345,7 @@ export default function ImageExplorer() {
                         <Copy className="w-3 h-3" /> File
                       </button>
                       <button
-                        onClick={() => setDeletePrompt({ type: "single", name: f.name })}
+                        onClick={() => setDeletePrompt({ type: "single", url: f.url })}
                         disabled={busyDelete}
                         className="inline-flex items-center justify-center gap-1 text-[10px] px-1.5 py-1 rounded border border-crimson/60 bg-crimson/10 text-red-300 hover:text-white hover:bg-crimson/30 transition disabled:opacity-50"
                         title="Delete"
@@ -373,11 +373,11 @@ export default function ImageExplorer() {
               </thead>
               <tbody>
                 {filtered.map((f) => {
-                  const isSelected = selected.has(f.name);
+                  const isSelected = selected.has(f.url);
                   return (
                     <tr key={f.name} className="border-b border-line/60 hover:bg-panel2/40">
                       <td className="p-2 align-middle">
-                        <button onClick={() => toggleSelect(f.name)} className="text-zinc-400 hover:text-white">
+                        <button onClick={() => toggleSelect(f.url)} className="text-zinc-400 hover:text-white">
                           {isSelected ? (
                             <CheckSquare className="w-4 h-4 text-pulse-400" />
                           ) : (
@@ -407,7 +407,7 @@ export default function ImageExplorer() {
                             <Copy className="w-3 h-3" /> File
                           </button>
                           <button
-                            onClick={() => setDeletePrompt({ type: "single", name: f.name })}
+                            onClick={() => setDeletePrompt({ type: "single", url: f.url })}
                             disabled={busyDelete}
                             className="inline-flex items-center gap-1 px-2 py-1 rounded border border-crimson/60 bg-crimson/10 text-red-300 hover:text-white hover:bg-crimson/30 transition disabled:opacity-50"
                             title="Delete"
@@ -450,11 +450,11 @@ function DeleteConfirmModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const count = prompt.type === "single" ? 1 : prompt.names.length;
+  const count = prompt.type === "single" ? 1 : prompt.urls.length;
   const title = count === 1 ? "Delete image?" : `Delete ${count} images?`;
   const detail =
     prompt.type === "single"
-      ? prompt.name
+      ? prompt.url.split("/").pop() || prompt.url
       : `${count} selected image files`;
 
   return (

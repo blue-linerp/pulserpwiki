@@ -1,6 +1,6 @@
 /**
- * src/app/api/media/route.ts
- * Lists and deletes uploaded images — now via Vercel Blob (prod) or local disk (dev).
+ * src/app/api/uploads/route.ts
+ * Lists and deletes uploaded images via Vercel Blob (prod) or local disk (dev).
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -20,16 +20,17 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let body: { url?: string } = {};
+  let body: { url?: string; name?: string } = {};
   try {
-    body = (await req.json()) as { url?: string };
+    body = (await req.json()) as { url?: string; name?: string };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const url = body.url;
-  if (!url || typeof url !== "string") {
-    return NextResponse.json({ error: "Missing file url." }, { status: 400 });
+  // Accept either url (Vercel Blob) or name (local dev fallback)
+  const url = body.url || (body.name ? `/uploads/${body.name}` : undefined);
+  if (!url) {
+    return NextResponse.json({ error: "Missing file url or name." }, { status: 400 });
   }
 
   await deleteUpload(url);
