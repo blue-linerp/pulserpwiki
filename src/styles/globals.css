@@ -1,0 +1,415 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: #0b0b0d;
+  color: #f5f5f5;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0b0b0d; }
+::-webkit-scrollbar-thumb { background: #1f1f25; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2a31; }
+
+@layer components {
+  .panel {
+    @apply bg-panel border border-line rounded-md shadow-panel;
+  }
+  .accent-bar {
+    @apply relative;
+  }
+  .accent-bar::before {
+    content: "";
+    @apply absolute left-0 top-0 bottom-0 w-[3px] bg-pulse-600 rounded-l-md;
+  }
+  .wiki-prose {
+    @apply text-[15px] leading-relaxed text-zinc-200;
+  }
+  .wiki-prose h2 {
+    @apply text-xl md:text-2xl font-display font-semibold mt-8 mb-3 pb-2 border-b border-line text-white relative;
+  }
+  .wiki-prose h2::after {
+    content: "";
+    @apply absolute left-0 -bottom-px h-[2px] w-16 bg-pulse-600;
+  }
+  .wiki-prose h3 {
+    @apply text-lg font-semibold mt-6 mb-2 text-white;
+  }
+  .wiki-prose p { @apply my-3 text-zinc-300; }
+  .wiki-prose ul { @apply list-disc list-outside pl-6 my-3 space-y-1.5 text-zinc-300; }
+  .wiki-prose ol { @apply list-decimal list-outside pl-6 my-3 space-y-1.5 text-zinc-300; }
+  .wiki-prose a { @apply text-pulse-500 hover:text-pulse-400 underline-offset-2 hover:underline; }
+  .wiki-prose strong { @apply text-white; }
+  .wiki-prose code { @apply px-1.5 py-0.5 rounded bg-panel2 border border-line text-pulse-400 text-[13px]; }
+  .wiki-prose blockquote { @apply border-l-2 border-pulse-700 pl-4 italic text-zinc-400 my-4; }
+}
+
+.scrollbar-thin::-webkit-scrollbar { width: 6px; }
+
+/* TipTap editor content */
+.tiptap { outline: none; }
+.tiptap p { margin: 0.5em 0; color: #d4d4d8; }
+.tiptap h1 { font-size: 1.875rem; font-weight: 800; color: #fff; margin: 1em 0 0.4em; line-height: 1.2; }
+.tiptap h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0.9em 0 0.35em; padding-bottom: 0.25em; border-bottom: 1px solid #1f1f25; }
+.tiptap h3 { font-size: 1.25rem; font-weight: 600; color: #fff; margin: 0.8em 0 0.3em; }
+.tiptap h4 { font-size: 1.05rem; font-weight: 600; color: #fff; margin: 0.7em 0 0.25em; }
+.tiptap h5 { font-size: 0.95rem; font-weight: 600; color: #fff; margin: 0.6em 0 0.25em; }
+.tiptap ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+.tiptap ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+.tiptap li { margin: 0.15em 0; }
+.tiptap a { color: #ef4444; text-decoration: underline; text-underline-offset: 2px; }
+.tiptap a:hover { color: #f87171; }
+.tiptap blockquote { border-left: 3px solid #b91c1c; padding-left: 1em; color: #a1a1aa; font-style: italic; margin: 0.8em 0; }
+.tiptap pre { background: #0a0a0c; border: 1px solid #1f1f25; padding: 0.75em; border-radius: 6px; overflow-x: auto; margin: 0.8em 0; }
+.tiptap code { background: #18181b; border: 1px solid #1f1f25; padding: 0 0.35em; border-radius: 4px; color: #ef4444; font-size: 0.875em; }
+.tiptap pre code { background: none; border: 0; padding: 0; color: inherit; }
+.tiptap img { display: block; margin: 0.8em 0; border-radius: 6px; border: 1px solid #1f1f25; max-width: 100%; height: auto; }
+.tiptap hr { border: 0; border-top: 1px solid #1f1f25; margin: 1.5em 0; }
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #52525b;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Apply the same look to saved/rendered article HTML */
+.tiptap-output { color: #d4d4d8; }
+.tiptap-output p { margin: 0.5em 0; }
+.tiptap-output h1 { font-size: 1.875rem; font-weight: 800; color: #fff; margin: 1em 0 0.4em; }
+.tiptap-output h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0.9em 0 0.35em; padding-bottom: 0.25em; border-bottom: 1px solid #1f1f25; position: relative; }
+.tiptap-output h2::after { content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: 4rem; background: #dc2626; }
+.tiptap-output h3 { font-size: 1.25rem; font-weight: 600; color: #fff; margin: 0.8em 0 0.3em; }
+.tiptap-output h4 { font-size: 1.05rem; font-weight: 600; color: #fff; margin: 0.7em 0 0.25em; }
+.tiptap-output ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+.tiptap-output ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+.tiptap-output blockquote { border-left: 3px solid #b91c1c; padding-left: 1em; color: #a1a1aa; font-style: italic; margin: 0.8em 0; }
+.tiptap-output pre { background: #0a0a0c; border: 1px solid #1f1f25; padding: 0.75em; border-radius: 6px; overflow-x: auto; margin: 0.8em 0; }
+.tiptap-output img { display: block; margin: 0.8em 0; border-radius: 6px; border: 1px solid #1f1f25; max-width: 100%; height: auto; }
+.tiptap-output hr { border: 0; border-top: 1px solid #1f1f25; margin: 1.5em 0; }
+.tiptap [data-text-align="center"], .tiptap-output [data-text-align="center"] { text-align: center; }
+.tiptap [data-text-align="right"], .tiptap-output [data-text-align="right"] { text-align: right; }
+.tiptap [data-text-align="justify"], .tiptap-output [data-text-align="justify"] { text-align: justify; }
+
+/* Notice banner — used in both editor and article output */
+.wiki-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  height: 101px;
+  padding: 0 1rem 0 0.85rem;
+  background: #0e0505;
+  border: 1px solid #3f1212;
+  border-left: 4px solid #dc2626;
+  border-radius: 4px;
+  margin: 0.75em 0;
+  user-select: text;
+}
+/* Badge: circular, clickable in editor */
+.wiki-notice-badge {
+  position: relative;
+  flex-shrink: 0;
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.wiki-notice-badge svg {
+  width: 95px;
+  height: 95px;
+  display: block;
+  flex-shrink: 0;
+}
+/* Image always clipped to a perfect circle, centered */
+.wiki-notice-img {
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  flex-shrink: 0;
+}
+/* Pencil overlay shown on hover (editor only) */
+.wiki-notice-badge-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.wiki-notice-badge:hover .wiki-notice-badge-overlay { opacity: 1; }
+.wiki-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.wiki-notice-title {
+  font-size: 15.2px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+.wiki-notice-text {
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  color: #d4d4d8;
+  line-height: 1.4;
+}
+/* Editor-specific */
+.tiptap .wiki-notice { cursor: text; }
+.tiptap .wiki-notice.ProseMirror-selectednode { outline: 2px solid #dc2626; outline-offset: 2px; }
+/* Article output: badge not clickable */
+.tiptap-output .wiki-notice-badge { cursor: default; }
+.tiptap-output .wiki-notice-badge-overlay { display: none; }
+
+/* Department infobox — LSPD/Fandom-style variant */
+.department-infobox {
+  border-color: #0b2d75;
+  background: #171b1d;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+.department-infobox-title {
+  background: #0b1210;
+  border-bottom: 1px solid #7f1d1d;
+  padding: 0.85rem 0.75rem;
+}
+.department-infobox-title h3 {
+  color: #f87171;
+  line-height: 1.18;
+  text-transform: none;
+}
+.department-infobox-image {
+  background: #1f2528;
+  border-top: 1px solid #7f1d1d;
+  border-bottom: 1px solid #7f1d1d;
+  padding: 0.65rem;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.department-infobox-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.department-infobox-caption {
+  background: #1f2528;
+  color: #9ca3af;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-style: italic;
+  text-align: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #7f1d1d;
+}
+.department-infobox-section {
+  background: #121817;
+  color: #f5f5f5;
+  border-top: 1px solid #7f1d1d;
+  border-bottom: 1px solid #0b2d75;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.department-infobox-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #121817;
+  color: #f5f5f5;
+  border: 0;
+  border-top: 1px solid #7f1d1d;
+  border-bottom: 1px solid #0b2d75;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  position: relative;
+}
+.department-infobox-section-toggle:hover {
+  background: #1a2222;
+}
+.department-infobox-section-toggle svg {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d4d4d8;
+}
+.department-infobox-section-toggle[aria-expanded="false"] svg {
+  transform: translateY(-50%) rotate(-90deg);
+}
+.department-infobox-row {
+  background: #202528;
+}
+.department-infobox-label {
+  width: 42%;
+  vertical-align: middle;
+  color: #f4f4f5;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  padding: 0.55rem 0.55rem;
+  border-bottom: 1px solid #7f1d1d;
+}
+.department-infobox-value {
+  vertical-align: middle;
+  color: #d4d4d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 0.55rem 0.55rem;
+  border-left: 1px solid #0b2d75;
+  border-bottom: 1px solid #7f1d1d;
+}
+.department-infobox-value a {
+  color: #0ea5e9;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+/* Business infobox — amber/gold variant */
+.business-infobox {
+  border-color: #92400e;
+  background: #18160f;
+  box-shadow: 0 0 0 1px rgba(180, 120, 20, 0.22);
+}
+.business-infobox-title {
+  background: #1a1505;
+  border-bottom: 1px solid #92400e;
+  padding: 0.85rem 0.75rem;
+}
+.business-infobox-title h3 {
+  color: #fbbf24;
+  line-height: 1.18;
+  text-transform: none;
+}
+.business-infobox-image {
+  background: #1e1a0e;
+  border-top: 1px solid #92400e;
+  border-bottom: 1px solid #92400e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.business-infobox-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.business-infobox-caption {
+  background: #1e1a0e;
+  color: #9ca3af;
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #92400e;
+}
+.business-infobox-collapsible {
+  border-top: 1px solid #92400e;
+}
+.business-infobox-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1505;
+  color: #fbbf24;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+.business-infobox-section-toggle:hover {
+  background: #211b07;
+}
+.business-infobox-section-toggle svg {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d4d4d8;
+}
+.business-infobox-section-toggle[aria-expanded="false"] svg {
+  transform: translateY(-50%) rotate(-90deg);
+}
+.business-infobox-row {
+  background: #1c1a10;
+}
+.business-infobox-label {
+  width: 42%;
+  vertical-align: middle;
+  color: #f4f4f5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 0.55rem 0.55rem;
+  border-bottom: 1px solid #92400e;
+}
+.business-infobox-value {
+  vertical-align: middle;
+  color: #d4d4d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 0.55rem 0.55rem;
+  border-left: 1px solid #92400e;
+  border-bottom: 1px solid #92400e;
+}
+.business-infobox-value a {
+  color: #fbbf24;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+/* At lg+ screens, stretch the notice across both grid columns */
+@media (min-width: 1024px) {
+  /* In the editor, the infobox sidebar lives inside the editor panel
+     as a 320px column with no gap (border-l separator). */
+  .tiptap .wiki-notice {
+    width: calc(100% + 320px);
+  }
+  /* In the article view, the infobox is in an outer grid column with gap-6. */
+  .tiptap-output .wiki-notice {
+    width: calc(100% + 320px + 1.5rem);
+  }
+  /* Push the sticky infobox below the full-width notice banner */
+  .has-notice-grid > aside {
+    margin-top: 125px;
+  }
+}

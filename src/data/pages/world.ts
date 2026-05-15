@@ -1,0 +1,187 @@
+import type { WikiPage } from "../types";
+
+export const worldPages: WikiPage[] = [
+  {
+    slug: "businesses",
+    title: "Businesses",
+    subtitle: "Legal storefronts, services, and player-run companies.",
+    category: "World",
+    description: "Player-owned businesses form the backbone of the Pulse RP economy.",
+    updated: "Updated 2 days ago",
+    tags: ["Business", "Economy"],
+    related: [
+      { title: "Civilian Jobs", slug: "civilian-jobs" },
+      { title: "Banking System", slug: "banking-system" },
+    ],
+    infobox: {
+      title: "Businesses",
+      imageLabel: "Storefront Icon",
+      fields: [
+        { label: "Type", value: "Player-Owned Economy" },
+        { label: "Approval", value: "Government / Staff Review" },
+        { label: "Categories", value: "Retail, Service, Hospitality, Industrial" },
+        { label: "Tax Rate", value: "Variable" },
+      ],
+    },
+    intro: ["Player-run businesses range from small cafés to large industrial operations. Each contributes to the city’s evolving economy."],
+    sections: [
+      { heading: "Starting a Business", body: ["Submit a business proposal through the government portal. Approved applicants receive a leasing opportunity and tax registration."] },
+      { heading: "Business Types", body: [
+        "- Retail — clothing, electronics, and convenience.",
+        "- Hospitality — restaurants, bars, and clubs.",
+        "- Service — barbers, mechanics, security firms.",
+        "- Industrial — manufacturing, logistics, agriculture.",
+      ]},
+      { heading: "Employees", body: ["Owners can hire employees with defined wages, schedules, and access permissions to inventory and registers."] },
+      { heading: "Featured Businesses", body: [
+        "- Pillbox Diner — late-night meals near the hospital.",
+        "- Vinewood Auto — premium tuning and detailing.",
+        "- Paleto Logistics — long-haul shipping company.",
+      ]},
+    ],
+  },
+  {
+    slug: "civilian-jobs",
+    title: "Civilian Jobs",
+    subtitle: "Earn an honest living across San Andreas.",
+    category: "World",
+    description: "Open civilian employment available to all Pulse RP players.",
+    updated: "Updated 3 days ago",
+    tags: ["Jobs", "Civilian"],
+    related: [
+      { title: "Businesses", slug: "businesses" },
+      { title: "Getting Started", slug: "getting-started" },
+    ],
+    infobox: {
+      title: "Civilian Jobs",
+      imageLabel: "Briefcase Icon",
+      fields: [
+        { label: "Type", value: "Job List" },
+        { label: "Whitelist Required", value: "No" },
+        { label: "Pay", value: "Hourly + tips/bonuses" },
+        { label: "Hub", value: "Job Center" },
+      ],
+    },
+    intro: ["Civilian jobs are accessible without whitelist and offer flexible income while characters develop deeper storylines."],
+    sections: [
+      { heading: "Available Jobs", body: [
+        "- Trucker / Long-Haul Delivery",
+        "- Taxi Driver",
+        "- Mechanic Helper",
+        "- Garbage Collector",
+        "- Postal Worker",
+        "- Bus Driver",
+        "- Mining / Hunting / Fishing",
+      ]},
+      { heading: "How to Start", body: ["Visit the Job Center near Legion Square, choose a job, and report to the listed work site to begin earning."] },
+      { heading: "Tips", body: [
+        "- Diversify income — try multiple jobs.",
+        "- Talk to NPCs and players to find leads.",
+        "- Keep an eye out for limited-time gigs.",
+      ]},
+    ],
+  },
+  {
+    slug: "criminal-activities",
+    title: "Criminal Activities",
+    subtitle: "The Pulse RP underworld — risk, reward, and reputation.",
+    category: "World",
+    description: "An overview of criminal pathways, gangs, and illicit activities in Pulse RP.",
+    updated: "Updated 1 day ago",
+    tags: ["Criminal", "Gangs", "Heists"],
+    related: [
+      { title: "Server Rules", slug: "server-rules" },
+      { title: "Weapons", slug: "weapons" },
+    ],
+    infobox: {
+      title: "Criminal Activities",
+      imageLabel: "Mask Icon",
+      fields: [
+        { label: "Type", value: "Roleplay Pathway" },
+        { label: "Risk", value: "High" },
+        { label: "Reward", value: "Variable" },
+        { label: "Whitelist", value: "Some activities require gang status" },
+      ],
+    },
+    intro: ["Criminal roleplay is a serious commitment. Players must value their character and follow Pulse RP’s strict rules around violence, hostage scenarios, and motive."],
+    sections: [
+      { heading: "Petty Crime", body: ["Pickpocketing, store robberies, and burglaries are entry-level activities. They require setup, lookout, and clean roleplay."] },
+      { heading: "Heists", body: [
+        "- Bank Robberies — multi-stage, high-risk.",
+        "- Jewelry Stores — fast-paced, high reward.",
+        "- Armored Trucks — coordinated convoy hits.",
+      ]},
+      { heading: "Drugs & Contraband", body: ["Production, transport, and distribution operate through hidden labs and trusted networks."] },
+      { heading: "Gangs & Crews", body: ["Recognized gangs have territorial influence, internal hierarchy, and ongoing storylines. Joining requires in-character integration."] },
+      { heading: "Risk Management", body: ["Always plan exits, escape vehicles, and contingencies. Capture and prison time are realistic outcomes of failed jobs."] },
+    ],
+  },
+  {
+    slug: "characters",
+    title: "Characters",
+    subtitle: "Notable players, NPCs, and personalities of Pulse RP.",
+    category: "World",
+    description: "A directory of significant characters in the Pulse RP universe.",
+    updated: "Updated 2 weeks ago",
+    tags: ["Characters", "Lore"],
+    related: [
+      { title: "Character Creation", slug: "character-creation" },
+      { title: "Locations", slug: "locations" },
+    ],
+    infobox: {
+      title: "Characters",
+      imageLabel: "Profile Icon",
+      fields: [
+        { label: "Type", value: "Lore Directory" },
+        { label: "Editable", value: "Yes — by character owner" },
+        { label: "Verification", value: "Staff for major NPCs" },
+      ],
+    },
+    intro: ["Characters are at the heart of Pulse RP. This page lists notable personalities, both player-driven and server-canonical, that shape the city’s ongoing story."],
+    sections: [
+      { heading: "Player Characters", body: ["Players may submit their own character pages. Each page should include a backstory, photo placeholder, current status, and known affiliations."] },
+      { heading: "Notable NPCs", body: [
+        "- The Mayor of Los Santos",
+        "- Pillbox Chief of Medicine",
+        "- LSPD Chief of Police",
+        "- Maze Bank Director",
+      ]},
+      { heading: "Submitting Your Character", body: ["Use the wiki contribution form. Submissions are reviewed by community moderators before publishing."] },
+    ],
+  },
+  {
+    slug: "locations",
+    title: "Locations",
+    subtitle: "The cities, neighborhoods, and landmarks of San Andreas.",
+    category: "World",
+    description: "A geographic overview of Pulse RP’s in-world locations.",
+    updated: "Updated 1 week ago",
+    tags: ["Locations", "Lore", "Geography"],
+    related: [
+      { title: "Businesses", slug: "businesses" },
+      { title: "Characters", slug: "characters" },
+    ],
+    infobox: {
+      title: "Locations",
+      imageLabel: "Map Icon",
+      fields: [
+        { label: "Type", value: "Geographic Index" },
+        { label: "Coverage", value: "Statewide" },
+        { label: "Major Cities", value: "Los Santos, Paleto Bay, Sandy Shores" },
+      ],
+    },
+    intro: ["From the neon strip of Vinewood to the windswept dunes of Sandy Shores, the world of Pulse RP is rich with distinct, story-ready locations."],
+    sections: [
+      { heading: "Los Santos", body: ["The state’s largest city — home to corporate towers, nightlife districts, and the busiest precincts in San Andreas."] },
+      { heading: "Vinewood", body: ["A glamorous, celebrity-laden district known for upscale clubs, studios, and high-profile crime."] },
+      { heading: "Paleto Bay", body: ["A small coastal town in northern Blaine County, anchored by Paleto Bay Sheriff Station."] },
+      { heading: "Sandy Shores", body: ["A rural desert community with off-grid living, biker culture, and remote labs."] },
+      { heading: "Notable Landmarks", body: [
+        "- Pillbox Medical Center",
+        "- Mission Row Police Station",
+        "- Maze Bank Tower",
+        "- Del Perro Pier",
+      ]},
+    ],
+  },
+];
