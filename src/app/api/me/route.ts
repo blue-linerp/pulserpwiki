@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-
+ 
 export const dynamic = "force-dynamic";
-
+ 
 export async function GET() {
   let u = null;
-  try {
-    u = getCurrentUser();
-  } catch {
-    return NextResponse.json({ user: null });
-  }
+  try { u = await getCurrentUser(); } catch { return NextResponse.json({ user: null }); }
   if (!u) return NextResponse.json({ user: null });
   return NextResponse.json({
     user: {
@@ -21,3 +17,4 @@ export async function GET() {
     },
   });
 }
+ 
