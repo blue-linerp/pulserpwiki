@@ -38,10 +38,7 @@ export default function CategoryGrid() {
               ) : c.icon ? (
                 <c.icon className="w-28 h-28 text-pulse-600 group-hover:text-pulse-400 transition" strokeWidth={1.25} />
               ) : null}
-              {/* Label */}
-              <span className="font-display font-bold text-[11px] uppercase tracking-[0.18em] text-pulse-400 group-hover:text-pulse-300 text-center transition">
-                {c.title}
-              </span>
+
             </Link>
           );
         })}
