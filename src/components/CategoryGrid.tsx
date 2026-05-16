@@ -21,7 +21,6 @@ export default function CategoryGrid() {
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
         {categories.map((c) => {
-          const Icon = c.icon;
           return (
             <Link
               key={c.slug}
@@ -33,8 +32,8 @@ export default function CategoryGrid() {
                 {c.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.imageUrl} alt={c.title} className="w-full h-full object-contain p-1" />
-                ) : Icon ? (
-                  <Icon className="w-8 h-8 text-pulse-600 group-hover:text-pulse-400 transition" strokeWidth={1.25} />
+                ) : c.icon ? (
+                  <c.icon className="w-8 h-8 text-pulse-600 group-hover:text-pulse-400 transition" strokeWidth={1.25} />
                 ) : null}
               </div>
               {/* Label */}
