@@ -315,6 +315,17 @@ function SettingsDrawer({
               value={page.slug}
               disabled={lockSlug}
               onChange={(e) => onChange({ slug: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === " ") {
+                  e.preventDefault();
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? el.value.length;
+                  const end = el.selectionEnd ?? el.value.length;
+                  const next = el.value.slice(0, start) + "-" + el.value.slice(end);
+                  onChange({ slug: next });
+                  requestAnimationFrame(() => { el.setSelectionRange(start + 1, start + 1); });
+                }
+              }}
               className={input + (lockSlug ? " opacity-60" : "")}
               placeholder="character-zachary-kane"
             />
@@ -386,6 +397,22 @@ function SettingsDrawer({
           >
             <textarea
               value={relatedDraft}
+              onKeyDown={(e) => {
+                if (e.key === " ") {
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? el.value.length;
+                  const lineStart = el.value.lastIndexOf("\n", start - 1) + 1;
+                  const currentLine = el.value.slice(lineStart, start);
+                  // Only insert | if the current line doesn't already have one
+                  if (!currentLine.includes("|")) {
+                    e.preventDefault();
+                    const end = el.selectionEnd ?? start;
+                    const next = el.value.slice(0, start) + " | " + el.value.slice(end);
+                    setRelatedDraft(next);
+                    requestAnimationFrame(() => { el.setSelectionRange(start + 3, start + 3); });
+                  }
+                }
+              }}
               onChange={(e) => {
                 const nextDraft = e.target.value;
                 setRelatedDraft(nextDraft);
