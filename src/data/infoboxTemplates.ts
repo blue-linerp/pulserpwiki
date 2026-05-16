@@ -77,7 +77,7 @@ export const SITE_TEMPLATE: TemplateGroup[] = [
     fields: [
       { label: "Founded", source: "founded" },
       { label: "Owner", source: "owner" },
-      { label: "Community Manager", source: "communityManager" },
+      { label: "Website Maintainer", source: "websiteMaintainer" },
       { label: "Community Size", source: "communitySize" },
       { label: "Website", source: "website" },
       { label: "Discord", source: "discord" },
