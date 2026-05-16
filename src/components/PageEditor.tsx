@@ -289,7 +289,6 @@ function SettingsDrawer({
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end"
-      onClick={onClose}
     >
       <div
         className="w-full max-w-md h-full bg-panel border-l border-line shadow-2xl flex flex-col"
