@@ -481,6 +481,9 @@ function ClickableInfoboxPreview({
 }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  // Persist enabled + fieldValues across modal open/close so state isn't lost
+  const [persistedEnabled, setPersistedEnabled] = useState<Set<string> | null>(null);
+  const [persistedFieldValues, setPersistedFieldValues] = useState<Record<string, string> | null>(null);
 
   return (
     <div className="relative">
@@ -542,8 +545,16 @@ function ClickableInfoboxPreview({
           infobox={infobox}
           template={template}
           uploadImage={uploadImage}
+          persistedEnabled={persistedEnabled}
+          persistedFieldValues={persistedFieldValues}
           onClose={() => setEditing(false)}
-          onApply={(next) => {
+          onPersist={(enabled, fieldValues) => {
+            setPersistedEnabled(enabled);
+            setPersistedFieldValues(fieldValues);
+          }}
+          onApply={(next, enabled, fieldValues) => {
+            setPersistedEnabled(enabled);
+            setPersistedFieldValues(fieldValues);
             onApply(next);
             setEditing(false);
           }}
@@ -585,12 +596,18 @@ function InfoboxModal({
   uploadImage,
   onApply,
   onClose,
+  onPersist,
+  persistedEnabled,
+  persistedFieldValues,
 }: {
   infobox: Infobox;
   template: InfoboxTemplateDefinition;
   uploadImage: (file: File) => Promise<string | null>;
-  onApply: (next: Infobox) => void;
+  onApply: (next: Infobox, enabled: Set<string>, fieldValues: Record<string, string>) => void;
   onClose: () => void;
+  onPersist: (enabled: Set<string>, fieldValues: Record<string, string>) => void;
+  persistedEnabled: Set<string> | null;
+  persistedFieldValues: Record<string, string> | null;
 }) {
   const fields = infobox.fields || [];
 
@@ -650,7 +667,7 @@ function InfoboxModal({
     return set;
   }, [fields, resolveKey, template.groups]);
 
-  const [enabled, setEnabled] = useState<Set<string>>(initialEnabled);
+  const [enabled, setEnabled] = useState<Set<string>>(persistedEnabled ?? initialEnabled);
   const [query, setQuery] = useState("");
   const isDepartmentTemplate = template.key === "department";
   const isLspdTemplate = template.key === "lspd";
@@ -669,10 +686,10 @@ function InfoboxModal({
   // fieldValues: controlled state for all field inputs so values persist
   // across check/uncheck cycles without losing data.
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
+    if (persistedFieldValues) return persistedFieldValues;
     const init: Record<string, string> = {};
     for (const f of fields) {
       if (f.kind !== "heading") {
-        // Try to match to a template source for consistent keying
         const templateMatch = template.groups
           .flatMap((g) => g.fields)
           .find((tf) => templateFieldLabel(tf).trim().toLowerCase() === f.label.trim().toLowerCase()
@@ -685,7 +702,11 @@ function InfoboxModal({
   });
 
   function setFieldValue(source: string, label: string, value: string) {
-    setFieldValues((prev) => ({ ...prev, [source]: value }));
+    setFieldValues((prev) => {
+      const next = { ...prev, [source]: value };
+      onPersist(enabled, next);
+      return next;
+    });
     const cur = existingByKey.get(source);
     if (cur) cur.value = value;
     else existingByKey.set(source, { label, source, value, kind: "field" });
@@ -708,6 +729,7 @@ function InfoboxModal({
     if (next.has(label)) next.delete(label);
     else next.add(label);
     setEnabled(next);
+    onPersist(next, fieldValues);
   }
 
   function apply() {
@@ -742,7 +764,7 @@ function InfoboxModal({
       imageLabel: boxImageLabel || undefined,
       templateKey: template.key,
       fields: next,
-    });
+    }, enabled, fieldValues);
   }
 
   const filter = (l: string) =>
