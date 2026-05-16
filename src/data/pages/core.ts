@@ -28,7 +28,7 @@ export const corePages: WikiPage[] = [
         { label: "", value: "Community", kind: "heading" },
         { label: "Founded",           source: "founded",          value: "—",             kind: "field" },
         { label: "Owner",             source: "owner",            value: "—",             kind: "field" },
-        { label: "Community Manager", source: "communityManager", value: "—",             kind: "field" },
+        { label: "Community Manager", source: "websiteMaintainer", value: "—",             kind: "field" },
         { label: "Community Size",    source: "communitySize",    value: "—",             kind: "field" },
         { label: "Website",           source: "website",          value: "pulse-rp.com",  kind: "field" },
         { label: "Discord",           source: "discord",          value: "Join Discord",  kind: "field" },
