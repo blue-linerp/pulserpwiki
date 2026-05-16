@@ -25,17 +25,19 @@ export default function CategoryGrid() {
             <Link
               key={c.slug}
               href={c.href}
-              className="group flex flex-col items-center gap-3 p-4 border border-pulse-800/50 bg-panel2/40 hover:border-pulse-500/70 hover:bg-panel2/80 transition"
+              className="group flex flex-col items-center gap-3 p-4 hover:bg-panel2/40 transition"
             >
-              {/* Icon / Image box */}
-              <div className="w-16 h-16 flex items-center justify-center border border-pulse-700/50 group-hover:border-pulse-500 bg-panel/60 group-hover:bg-pulse-900/30 transition overflow-hidden">
-                {c.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.imageUrl} alt={c.title} className="w-full h-full object-contain p-1" />
-                ) : c.icon ? (
-                  <c.icon className="w-8 h-8 text-pulse-600 group-hover:text-pulse-400 transition" strokeWidth={1.25} />
-                ) : null}
-              </div>
+              {/* Image — no wrapper box, just the image itself */}
+              {c.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.imageUrl}
+                  alt={c.title}
+                  className="w-28 h-28 object-contain group-hover:scale-105 transition-transform"
+                />
+              ) : c.icon ? (
+                <c.icon className="w-28 h-28 text-pulse-600 group-hover:text-pulse-400 transition" strokeWidth={1.25} />
+              ) : null}
               {/* Label */}
               <span className="font-display font-bold text-[11px] uppercase tracking-[0.18em] text-pulse-400 group-hover:text-pulse-300 text-center transition">
                 {c.title}
