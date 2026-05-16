@@ -621,13 +621,34 @@ function InfoboxModal({
   );
 
   // Build the initial enabled-set from existing field labels.
+  // Cross-reference with template sources to ensure key consistency.
   const initialEnabled = useMemo(() => {
     const set = new Set<string>();
+    // Build a map of all template sources for fast lookup
+    const allTemplateSources = new Set(
+      template.groups.flatMap((g) => g.fields.map(templateFieldSource))
+    );
     for (const f of fields) {
-      if (f.kind !== "heading" && f.label.trim()) set.add(resolveKey(f));
+      if (f.kind !== "heading" && f.label.trim()) {
+        const key = resolveKey(f);
+        // If this key matches a template source directly, use it
+        if (allTemplateSources.has(key)) {
+          set.add(key);
+        } else {
+          // Try matching by label against template fields
+          const templateMatch = template.groups
+            .flatMap((g) => g.fields)
+            .find((tf) => templateFieldLabel(tf).trim().toLowerCase() === f.label.trim().toLowerCase());
+          if (templateMatch) {
+            set.add(templateFieldSource(templateMatch));
+          } else {
+            set.add(key);
+          }
+        }
+      }
     }
     return set;
-  }, [fields, resolveKey]);
+  }, [fields, resolveKey, template.groups]);
 
   const [enabled, setEnabled] = useState<Set<string>>(initialEnabled);
   const [query, setQuery] = useState("");
@@ -647,12 +668,17 @@ function InfoboxModal({
 
   // fieldValues: controlled state for all field inputs so values persist
   // across check/uncheck cycles without losing data.
-  // Use resolveKey (same as initialEnabled) so keys are consistent.
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const f of fields) {
       if (f.kind !== "heading") {
-        init[resolveKey(f)] = f.value ?? "";
+        // Try to match to a template source for consistent keying
+        const templateMatch = template.groups
+          .flatMap((g) => g.fields)
+          .find((tf) => templateFieldLabel(tf).trim().toLowerCase() === f.label.trim().toLowerCase()
+            || templateFieldSource(tf) === f.source);
+        const key = templateMatch ? templateFieldSource(templateMatch) : resolveKey(f);
+        init[key] = f.value ?? "";
       }
     }
     return init;
