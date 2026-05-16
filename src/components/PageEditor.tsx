@@ -647,12 +647,12 @@ function InfoboxModal({
 
   // fieldValues: controlled state for all field inputs so values persist
   // across check/uncheck cycles without losing data.
+  // Use resolveKey (same as initialEnabled) so keys are consistent.
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const f of fields) {
       if (f.kind !== "heading") {
-        const key = f.source || f.label.trim();
-        init[key] = f.value ?? "";
+        init[resolveKey(f)] = f.value ?? "";
       }
     }
     return init;
