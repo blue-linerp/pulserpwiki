@@ -553,6 +553,36 @@ function ClickableInfoboxPreview({
   );
 }
 
+
+function FieldEditor({
+  label,
+  source,
+  existingByKey,
+}: {
+  label: string;
+  source: string;
+  existingByKey: Map<string, InfoboxField>;
+}) {
+  const [value, setValue] = useState(() => existingByKey.get(source)?.value ?? "");
+  return (
+    <div className="space-y-1">
+      <div className="text-[10px] uppercase tracking-wider text-zinc-400">{label}</div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          const cur = existingByKey.get(source);
+          if (cur) cur.value = e.target.value;
+          else existingByKey.set(source, { label, source, value: e.target.value, kind: "field" });
+        }}
+        className={input + " text-sm"}
+        placeholder=""
+      />
+    </div>
+  );
+}
+
 function InfoboxModal({
   infobox,
   template,
@@ -858,31 +888,13 @@ function InfoboxModal({
                       {visibleInGroup.map((field) => {
                         const label = templateFieldLabel(field);
                         const source = templateFieldSource(field);
-                        const existing = existingByKey.get(source);
                         return (
-                          <div key={source} className="space-y-1">
-                            <div className="text-[10px] uppercase tracking-wider text-zinc-400">
-                              {label}
-                            </div>
-                            <input
-                              type="text"
-                              defaultValue={existing?.value ?? ""}
-                              onChange={(e) => {
-                                // Mutate the existing map so Apply persists changes.
-                                const cur = existingByKey.get(source);
-                                if (cur) cur.value = e.target.value;
-                                else
-                                  existingByKey.set(source, {
-                                    label,
-                                    source,
-                                    value: e.target.value,
-                                    kind: "field",
-                                  });
-                              }}
-                              className={input + " text-sm"}
-                              placeholder=""
-                            />
-                          </div>
+                          <FieldEditor
+                            key={source}
+                            label={label}
+                            source={source}
+                            existingByKey={existingByKey}
+                          />
                         );
                       })}
                     </div>
