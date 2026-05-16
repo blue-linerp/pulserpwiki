@@ -1,12 +1,41 @@
 import Layout from "@/components/Layout";
 import WikiArticle, { resolveRelatedPages } from "@/components/WikiArticle";
 import { getPage, getAllPages, getCustomPagesByCategory } from "@/data/pages/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import RecentChanges from "@/components/RecentChanges";
 import Link from "next/link";
 import { sidebarGroups } from "@/data/sidebar";
 
 export const dynamic = "force-dynamic";
+
+/** Infer a page type and pre-filled title from a slug so we can send the
+ *  user straight to the right "New Page" form instead of a 404. */
+function inferNewPageParams(slug: string): { type: string; title: string } | null {
+  const s = slug.toLowerCase();
+
+  // Explicit prefix matches
+  if (s.startsWith("character-") || s.startsWith("char-"))
+    return { type: "character", title: slug.replace(/^char(acter)?-/i, "").replace(/-/g, " ") };
+  if (s.startsWith("department-") || s.startsWith("dept-"))
+    return { type: "department", title: slug.replace(/^dept?(-artment)?-/i, "").replace(/-/g, " ") };
+  if (s.startsWith("business-") || s.startsWith("biz-"))
+    return { type: "business", title: slug.replace(/^bi?z?(-ness)?-/i, "").replace(/-/g, " ") };
+  if (s.startsWith("neighborhood-") || s.startsWith("location-") || s.startsWith("district-") || s.startsWith("area-"))
+    return { type: "neighborhood", title: slug.replace(/^(neighborhood|location|district|area)-/i, "").replace(/-/g, " ") };
+
+  // Keyword hints anywhere in the slug
+  if (s.includes("police") || s.includes("lspd") || s.includes("bcso") || s.includes("sheriff") || s.includes("ems") || s.includes("medical") || s.includes("department") || s.includes("agency"))
+    return { type: "department", title: slug.replace(/-/g, " ") };
+  if (s.includes("business") || s.includes("shop") || s.includes("store") || s.includes("company") || s.includes("corp") || s.includes("garage"))
+    return { type: "business", title: slug.replace(/-/g, " ") };
+  if (s.includes("neighborhood") || s.includes("district") || s.includes("location") || s.includes("street") || s.includes("avenue") || s.includes("blvd") || s.includes("beach") || s.includes("hills") || s.includes("valley") || s.includes("port") || s.includes("downtown") || s.includes("city"))
+    return { type: "neighborhood", title: slug.replace(/-/g, " ") };
+
+  // Default: assume character
+  return { type: "character", title: slug.replace(/-/g, " ") };
+}
+
+
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const page = await getPage(params.slug);
@@ -26,7 +55,19 @@ export default async function WikiPage({ params }: { params: { slug: string } })
   if (params.slug === "locations") return <LocationsView />;
 
   const page = await getPage(params.slug);
-  if (!page) return notFound();
+  if (!page) {
+    const inferred = inferNewPageParams(params.slug);
+    if (inferred) {
+      const titleParam = encodeURIComponent(
+        inferred.title
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ")
+      );
+      redirect(`/wiki/new?type=${inferred.type}&slug=${encodeURIComponent(params.slug)}&title=${titleParam}`);
+    }
+    return notFound();
+  }
 
   let extra: React.ReactNode = null;
   if (params.slug === "characters") {
