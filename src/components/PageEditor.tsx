@@ -556,26 +556,22 @@ function ClickableInfoboxPreview({
 
 function FieldEditor({
   label,
-  source,
-  existingByKey,
+  value,
+  onChange,
 }: {
   label: string;
   source: string;
-  existingByKey: Map<string, InfoboxField>;
+  initialValue: string;
+  value: string;
+  onChange: (v: string) => void;
 }) {
-  const [value, setValue] = useState(() => existingByKey.get(source)?.value ?? "");
   return (
     <div className="space-y-1">
       <div className="text-[10px] uppercase tracking-wider text-zinc-400">{label}</div>
       <input
         type="text"
         value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          const cur = existingByKey.get(source);
-          if (cur) cur.value = e.target.value;
-          else existingByKey.set(source, { label, source, value: e.target.value, kind: "field" });
-        }}
+        onChange={(e) => onChange(e.target.value)}
         className={input + " text-sm"}
         placeholder=""
       />
@@ -641,7 +637,6 @@ function InfoboxModal({
   const isEmsTemplate = template.key === "ems";
   const templateShortName = isLspdTemplate ? "LSPD" : isBcsoTemplate ? "BCSO" : isEmsTemplate ? "EMS" : isDepartmentTemplate ? "Department" : template.label;
   // Preserve any pre-existing custom (non-template) fields so we don't lose them.
-  // useRef so mutations from FieldEditor persist across re-renders without recreating.
   const existingByKeyRef = useRef<Map<string, InfoboxField> | null>(null);
   if (!existingByKeyRef.current) {
     const m = new Map<string, InfoboxField>();
@@ -649,6 +644,26 @@ function InfoboxModal({
     existingByKeyRef.current = m;
   }
   const existingByKey = existingByKeyRef.current;
+
+  // fieldValues: controlled state for all field inputs so values persist
+  // across check/uncheck cycles without losing data.
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const f of fields) {
+      if (f.kind !== "heading") {
+        const key = f.source || f.label.trim();
+        init[key] = f.value ?? "";
+      }
+    }
+    return init;
+  });
+
+  function setFieldValue(source: string, label: string, value: string) {
+    setFieldValues((prev) => ({ ...prev, [source]: value }));
+    const cur = existingByKey.get(source);
+    if (cur) cur.value = value;
+    else existingByKey.set(source, { label, source, value, kind: "field" });
+  }
 
   const allTemplateLabels = useMemo(
     () => new Set(template.groups.flatMap((g) => g.fields.map(templateFieldSource))),
@@ -680,11 +695,10 @@ function InfoboxModal({
       for (const field of groupFields) {
         const label = templateFieldLabel(field);
         const source = templateFieldSource(field);
-        const existing = existingByKey.get(source);
         next.push({
           label,
           source,
-          value: existing?.value ?? "",
+          value: fieldValues[source] ?? existingByKey.get(source)?.value ?? "",
           kind: "field",
         });
       }
@@ -896,7 +910,9 @@ function InfoboxModal({
                             key={source}
                             label={label}
                             source={source}
-                            existingByKey={existingByKey}
+                            initialValue={fieldValues[source] ?? ""}
+                            value={fieldValues[source] ?? ""}
+                            onChange={(v) => setFieldValue(source, label, v)}
                           />
                         );
                       })}
