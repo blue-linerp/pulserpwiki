@@ -62,7 +62,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
         </nav>
         <div className="hidden md:flex items-center gap-2 ml-1">
           <a
-            href="#"
+            href="https://discord.gg/zabpTY2ARU"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5865F2] border border-[#7983F5] text-white hover:bg-[#4752C4] hover:border-[#6875f5] shadow-[0_0_0_1px_rgba(88,101,242,0.22),0_8px_20px_rgba(88,101,242,0.18)] text-xs font-semibold transition"
           >
             <DiscordIcon className="w-4 h-4" /> Discord
@@ -95,7 +95,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
                 {l.label}
               </Link>
             ))}
-            <a href="#" className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[#5865F2] border border-[#7983F5] text-white hover:bg-[#4752C4] font-semibold">
+            <a href="https://discord.gg/zabpTY2ARU" className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[#5865F2] border border-[#7983F5] text-white hover:bg-[#4752C4] font-semibold">
               <DiscordIcon className="w-4 h-4" /> Discord
             </a>
             <a href="/api/auth/steam" className="px-3 py-2 rounded-md bg-pulse-600 text-white text-center">Sign in with Steam</a>
