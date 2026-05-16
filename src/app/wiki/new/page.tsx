@@ -5,7 +5,7 @@ import { buildTemplateFields, BUSINESS_TEMPLATE, DEPARTMENT_TEMPLATE, NEIGHBORHO
 
 export const dynamic = "force-dynamic";
 
-function buildBlank(type: string): WikiPage {
+function buildBlank(type: string, slugOverride?: string, titleOverride?: string): WikiPage {
   if (type === "business") {
     return {
       slug: "business-new-business",
@@ -107,8 +107,14 @@ function buildBlank(type: string): WikiPage {
 export default function NewPage({
   searchParams,
 }: {
-  searchParams: { type?: string };
+  searchParams: { type?: string; slug?: string; title?: string };
 }) {
   const blank = buildBlank(searchParams.type ?? "character");
+
+  // Pre-fill slug and title if redirected from a 404
+  if (searchParams.slug) blank.slug = searchParams.slug;
+  if (searchParams.title) blank.title = searchParams.title;
+  if (searchParams.title && blank.infobox) blank.infobox.title = searchParams.title;
+
   return <PageEditor initial={blank} mode="create" />;
 }
