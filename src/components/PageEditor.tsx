@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Save,
@@ -641,11 +641,14 @@ function InfoboxModal({
   const isEmsTemplate = template.key === "ems";
   const templateShortName = isLspdTemplate ? "LSPD" : isBcsoTemplate ? "BCSO" : isEmsTemplate ? "EMS" : isDepartmentTemplate ? "Department" : template.label;
   // Preserve any pre-existing custom (non-template) fields so we don't lose them.
-  const existingByKey = useMemo(() => {
+  // useRef so mutations from FieldEditor persist across re-renders without recreating.
+  const existingByKeyRef = useRef<Map<string, InfoboxField> | null>(null);
+  if (!existingByKeyRef.current) {
     const m = new Map<string, InfoboxField>();
     for (const f of fields) if (f.kind !== "heading") m.set(resolveKey(f), f);
-    return m;
-  }, [fields, resolveKey]);
+    existingByKeyRef.current = m;
+  }
+  const existingByKey = existingByKeyRef.current;
 
   const allTemplateLabels = useMemo(
     () => new Set(template.groups.flatMap((g) => g.fields.map(templateFieldSource))),
