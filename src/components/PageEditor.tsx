@@ -393,12 +393,12 @@ function SettingsDrawer({
           </Field>
           <Field
             label="Related pages"
-            hint='Format: "Title | slug" — one per line.'
+            hint='Type title, press Tab to insert |, then type slug'
           >
             <textarea
               value={relatedDraft}
               onKeyDown={(e) => {
-                if (e.key === " ") {
+                if (e.key === "Tab") {
                   const el = e.currentTarget;
                   const start = el.selectionStart ?? el.value.length;
                   const lineStart = el.value.lastIndexOf("\n", start - 1) + 1;
