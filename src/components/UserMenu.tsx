@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogIn, LogOut, ShieldCheck, Plus, ChevronDown, Images, Users } from "lucide-react";
+import { LogIn, LogOut, ShieldCheck, Plus, ChevronDown, Images, Users, LayoutDashboard, Settings2 } from "lucide-react";
 import NewPageModal from "./NewPageModal";
 
 export interface MeResponse {
@@ -88,6 +88,20 @@ export default function UserMenu() {
           </div>
           {me.role === "admin" && (
             <>
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-panel2"
+              >
+                <LayoutDashboard className="w-4 h-4 text-pulse-500" /> Admin Dashboard
+              </Link>
+              <Link
+                href="/admin/settings"
+                onClick={() => setOpen(false)}
+                className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-panel2"
+              >
+                <Settings2 className="w-4 h-4 text-pulse-500" /> Site Settings
+              </Link>
               <button
                 onClick={() => { setOpen(false); setNewPageModal(true); }}
                 className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-panel2"

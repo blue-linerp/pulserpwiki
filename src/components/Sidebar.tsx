@@ -6,10 +6,36 @@ import { ChevronDown } from "lucide-react";
 import { sidebarGroups, type SidebarGroup as SidebarGroupData, type SidebarLink } from "@/data/sidebar";
 import { usePathname } from "next/navigation";
 
+type Settings = Record<string, string>;
+
+function settingEnabled(s: Settings, key: string, def = true) {
+  if (!(key in s)) return def;
+  return s[key] === "1";
+}
+
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [groups, setGroups] = useState<SidebarGroupData[]>(sidebarGroups);
+  const [settings, setSettings] = useState<Settings>({});
 
   useEffect(() => {
+    function loadSettings() {
+      fetch("/api/site-settings", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d: { settings?: Settings }) => setSettings(d.settings ?? {}))
+        .catch(() => {});
+    }
+    loadSettings();
+    // Live-refresh when the admin saves changes in this tab, when the tab
+    // regains focus, or when the page becomes visible again.
+    const onChanged = () => loadSettings();
+    const onFocus = () => loadSettings();
+    window.addEventListener("pulse:settings-changed", onChanged as EventListener);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) loadSettings();
+    });
+
+    // Load dynamic departments
     fetch("/api/departments", { cache: "no-store" })
       .then((r) => r.json())
       .then((data: { departments?: SidebarLink[] }) => {
@@ -29,7 +55,21 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         );
       })
       .catch(() => undefined);
+
+    return () => {
+      window.removeEventListener("pulse:settings-changed", onChanged as EventListener);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
+
+  // Filter groups and links based on settings
+  const visibleGroups = groups
+    .filter(g => settingEnabled(settings, `sidebar_group:${g.title}`))
+    .map(g => ({
+      ...g,
+      links: g.links.filter(l => settingEnabled(settings, `sidebar_link:${l.href}`)),
+    }))
+    .filter(g => g.links.length > 0);
 
   return (
     <>
@@ -44,7 +84,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         }`}
       >
         <div className="h-full overflow-y-auto scrollbar-thin px-3 py-4 space-y-4">
-          {groups.map((g) => (
+          {visibleGroups.map((g) => (
             <SidebarGroup key={g.title} title={g.title} defaultOpen={g.defaultOpen ?? false}>
               {g.links.map((l) => (
                 <SidebarLinkItem key={l.href + l.label} href={l.href} label={l.label} onNavigate={onClose} />

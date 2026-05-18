@@ -15,6 +15,7 @@ export const sidebarGroups: SidebarGroup[] = [
     links: [
       { label: "Main Page", href: "/" },
       { label: "All Pages", href: "/wiki/all-pages" },
+      { label: "Map: Los Santos", href: "/wiki/map" },
       { label: "Recent Changes", href: "/wiki/recent-changes" },
       { label: "Community", href: "/wiki/community" },
       { label: "Server Rules", href: "/wiki/server-rules" },

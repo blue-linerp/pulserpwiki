@@ -125,7 +125,7 @@ export default async function WikiArticle({
               <span className="uppercase tracking-wider text-pulse-500">{page.category}</span>
             </div>
           </div>
-          <WikiActions slug={page.slug} />
+          <WikiActions slug={page.slug} pageTitle={page.title} />
         </div>
         {relatedPages.length > 0 && (
           <div className="mt-2 flex items-center gap-1 flex-wrap text-[12px]">

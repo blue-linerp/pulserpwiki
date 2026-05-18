@@ -49,6 +49,16 @@ export async function ensureSchema(): Promise<void> {
       hidden_at  INTEGER NOT NULL,
       hidden_by  TEXT
     );
+    CREATE TABLE IF NOT EXISTS page_history (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug       TEXT NOT NULL,
+      data       TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      updated_by TEXT,
+      summary    TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_page_history_slug
+      ON page_history(slug, updated_at DESC);
   `);
   // Add summary column if upgrading from older schema
   try {
@@ -178,6 +188,57 @@ export const Pages = {
         args: [slug, json, isCustom ? 1 : 0, now, updatedBy, summary ?? null],
       });
     }
+    // Append a history row for every save, capturing the new state.
+    await db.execute({
+      sql: "INSERT INTO page_history(slug, data, updated_at, updated_by, summary) VALUES (?,?,?,?,?)",
+      args: [slug, json, now, updatedBy, summary ?? null],
+    });
+  },
+  async history(slug: string, limit = 100): Promise<{
+    id: number;
+    slug: string;
+    data: string;
+    updated_at: number;
+    updated_by: string | null;
+    summary: string | null;
+  }[]> {
+    await ensureSchema();
+    const r = await db.execute({
+      sql: "SELECT id, slug, data, updated_at, updated_by, summary FROM page_history WHERE slug=? ORDER BY updated_at DESC LIMIT ?",
+      args: [slug, limit],
+    });
+    return r.rows.map((row) => ({
+      id: Number(row.id),
+      slug: String(row.slug),
+      data: String(row.data),
+      updated_at: Number(row.updated_at),
+      updated_by: row.updated_by != null ? String(row.updated_by) : null,
+      summary: row.summary != null ? String(row.summary) : null,
+    }));
+  },
+  async historyEntry(id: number): Promise<{
+    id: number;
+    slug: string;
+    data: string;
+    updated_at: number;
+    updated_by: string | null;
+    summary: string | null;
+  } | undefined> {
+    await ensureSchema();
+    const r = await db.execute({
+      sql: "SELECT id, slug, data, updated_at, updated_by, summary FROM page_history WHERE id=?",
+      args: [id],
+    });
+    const row = r.rows[0];
+    if (!row) return undefined;
+    return {
+      id: Number(row.id),
+      slug: String(row.slug),
+      data: String(row.data),
+      updated_at: Number(row.updated_at),
+      updated_by: row.updated_by != null ? String(row.updated_by) : null,
+      summary: row.summary != null ? String(row.summary) : null,
+    };
   },
   async delete(slug: string): Promise<void> {
     await ensureSchema();

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import { headers } from "next/headers";
+import { getSettings } from "@/lib/siteSettings";
+import { getCurrentUser } from "@/lib/auth";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 
 export const metadata: Metadata = {
   title: "Pulse RP Wiki — The Pulse Roleplay Community Wiki",
@@ -7,7 +11,22 @@ export const metadata: Metadata = {
     "The official community wiki for Pulse RP, a serious FiveM roleplay server. Departments, jobs, businesses, characters, lore, rules, and guides.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Maintenance mode gate: when feature:maintenance=1, hide the site from
+  // everyone except admins. Admin and auth API routes remain accessible so
+  // admins can flip the toggle back off.
+  const settings = await getSettings();
+  const maintenance = settings["feature:maintenance"] === "1";
+  let blocked = false;
+  if (maintenance) {
+    const me = await getCurrentUser();
+    if (!me || me.role !== "admin") {
+      const path = headers().get("x-invoke-path") ?? "";
+      if (!path.startsWith("/admin") && !path.startsWith("/api/") && path !== "/maintenance") {
+        blocked = true;
+      }
+    }
+  }
   return (
     <html lang="en">
       <head>
@@ -21,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-bg text-zinc-100 antialiased">{children}</body>
+      <body className="bg-bg text-zinc-100 antialiased" suppressHydrationWarning>
+        {blocked ? <MaintenanceScreen /> : children}
+      </body>
     </html>
   );
 }
