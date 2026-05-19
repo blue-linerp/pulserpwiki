@@ -9,8 +9,12 @@ import { sidebarGroups } from "@/data/sidebar";
 
 export const dynamic = "force-dynamic";
 
+function decodeSlug(slug: string): string {
+  try { return decodeURIComponent(slug); } catch { return slug; }
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const page = await getPage(params.slug);
+  const page = await getPage(decodeSlug(params.slug));
   if (!page) return { title: "Government Departments — Pulse RP Wiki" };
   return {
     title: `${page.title} — Pulse RP Wiki`,
@@ -19,9 +23,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function WikiPage({ params }: { params: { slug: string } }) {
+  const slug = decodeSlug(params.slug);
   // Check if this page is disabled via admin settings
   const settings = await getSettings();
-  if (!isPageEnabled(settings, params.slug)) {
+  if (!isPageEnabled(settings, slug)) {
     return (
       <Layout>
         <div className="panel p-16 text-center space-y-4">
@@ -37,14 +42,24 @@ export default async function WikiPage({ params }: { params: { slug: string } })
   }
 
   // Special synthetic pages
-  if (params.slug === "all-pages") return <AllPagesView />;
-  if (params.slug === "recent-changes") return <RecentChangesView />;
-  if (params.slug === "community") return <CommunityView />;
-  if (params.slug === "departments") return <DepartmentsView />;
-  if (params.slug === "characters") return <CharactersView />;
-  if (params.slug === "police") return <PoliceView />;
+  if (slug === "all-pages") return <AllPagesView />;
+  if (slug === "recent-changes") return <RecentChangesView />;
+  if (slug === "community") return <CommunityView />;
+  if (slug === "Category:Departments") return <DepartmentsView />;
+  if (slug === "departments") redirect("/wiki/Category:Departments");
+  if (slug === "Category:Characters") return <CharactersView />;
+  if (slug === "Category:Police") return <PoliceView />;
+  if (slug === "Category:Locations") return <LocationsView />;
+  if (slug === "Category:Businesses") return <BusinessesView />;
+  if (slug === "Category:Vehicles") redirect("/wiki/Category:Vehicles");
+  if (slug === "Category:Weapons") redirect("/wiki/Category:Weapons");
+  // Redirect old plain slugs to their Category: equivalents
+  if (slug === "characters") redirect("/wiki/Category:Characters");
+  if (slug === "police") redirect("/wiki/Category:Police");
+  if (slug === "locations") redirect("/wiki/Category:Locations");
+  if (slug === "businesses") redirect("/wiki/Category:Businesses");
 
-  const page = await getPage(params.slug);
+  const page = await getPage(slug);
   if (!page) return notFound();
 
   const relatedPages = await resolveRelatedPages(page);
@@ -119,8 +134,10 @@ function firstGalleryImage(value?: string): string | undefined {
 
 async function DepartmentsView() {
   const all = await getAllPages();
+  const settings = await getSettings();
   const departments = all.filter(
     (p) =>
+      isPageEnabled(settings, p.slug) &&
       p.slug !== "department-of-justice-legislation" &&
       (p.category.toLowerCase() === "department" ||
       p.infobox?.templateKey === "department" ||
@@ -232,8 +249,10 @@ function CommunityView() {
 
 async function CharactersView() {
   const all = await getAllPages();
+  const settings = await getSettings();
   const chars = all.filter(
     (p) =>
+      isPageEnabled(settings, p.slug) &&
       p.category.toLowerCase() === "character" &&
       p.slug !== "character-creation" &&
       p.slug !== "character-template"
@@ -242,6 +261,10 @@ async function CharactersView() {
   return (
     <Layout>
       <div className="space-y-6">
+        <header className="border-b border-line pb-4">
+          <h1 className="font-display font-extrabold text-3xl text-white">Characters</h1>
+          <p className="text-zinc-400 text-sm mt-1">Category page</p>
+        </header>
         <section className="panel relative overflow-hidden">
           <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
           <div className="relative px-6 py-12 text-center">
@@ -296,6 +319,7 @@ async function CharactersView() {
 async function PoliceView() {
   const all = await getAllPages();
 
+  const settings = await getSettings();
   const DEPT_SLUGS = [
     "los-santos-police-department",
     "los-santos-junior-police-department",
@@ -320,6 +344,7 @@ async function PoliceView() {
   };
 
   const policeChars = all.filter((p) => {
+    if (!isPageEnabled(settings, p.slug)) return false;
     if (p.category.toLowerCase() !== "character") return false;
     if (p.slug === "character-creation" || p.slug === "character-template") return false;
     const fields = p.infobox?.fields ?? [];
@@ -357,6 +382,10 @@ async function PoliceView() {
   return (
     <Layout>
       <div className="space-y-6">
+        <header className="border-b border-line pb-4">
+          <h1 className="font-display font-extrabold text-3xl text-white">Law Enforcement</h1>
+          <p className="text-zinc-400 text-sm mt-1">Category page</p>
+        </header>
         <section className="panel relative overflow-hidden">
           <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(37,99,235,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
           <div className="relative px-6 py-12 text-center">
@@ -441,6 +470,216 @@ async function PoliceView() {
             </div>
           </section>
         )}
+      </div>
+    </Layout>
+  );
+}
+
+async function LocationsView() {
+  const all = await getAllPages();
+  const settings = await getSettings();
+  const LOCATION_CATEGORIES = ["location", "neighborhood", "landmark", "district", "region"];
+  const locations = all.filter(
+    (p) =>
+      isPageEnabled(settings, p.slug) &&
+      p.slug !== "locations" &&
+      (
+        LOCATION_CATEGORIES.includes(p.category.toLowerCase()) ||
+        p.tags.some((t) => ["location", "neighborhood", "landmark", "district"].includes(t.toLowerCase()))
+      )
+  );
+
+  // Group by region tag if present
+  const REGIONS = ["Los Santos", "Blaine County", "Sandy Shores", "Paleto Bay", "Vinewood"];
+  const groups: Record<string, typeof locations> = {};
+  const ungrouped: typeof locations = [];
+
+  for (const p of locations) {
+    const matched = REGIONS.find((r) =>
+      p.tags.some((t) => t.toLowerCase() === r.toLowerCase()) ||
+      (p.subtitle || "").toLowerCase().includes(r.toLowerCase())
+    );
+    if (matched) {
+      groups[matched] = groups[matched] || [];
+      groups[matched].push(p);
+    } else {
+      ungrouped.push(p);
+    }
+  }
+
+  const activeRegions = REGIONS.filter((r) => groups[r]?.length > 0);
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <header className="border-b border-line pb-4">
+          <h1 className="font-display font-extrabold text-3xl text-white">Locations</h1>
+          <p className="text-zinc-400 text-sm mt-1">Category page</p>
+        </header>
+        <section className="panel relative overflow-hidden">
+          <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
+          <div className="relative px-6 py-12 text-center">
+            <h2 className="inline-block font-display text-2xl md:text-4xl font-black uppercase text-white leading-none tracking-tight border-b-[6px] border-pulse-600 pb-2">
+              Locations
+            </h2>
+            <p className="mt-4 text-sm text-zinc-300">The cities, neighborhoods, and landmarks of San Andreas.</p>
+          </div>
+        </section>
+
+        {locations.length === 0 ? (
+          <div className="panel p-8 text-center">
+            <p className="text-zinc-400 text-sm">No location pages yet.</p>
+          </div>
+        ) : (
+          <>
+            {activeRegions.map((region) => (
+              <section key={region}>
+                <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
+                  {region}
+                  <span className="absolute left-0 -bottom-px h-[2px] w-12 bg-pulse-600" />
+                </h2>
+                <div className="flex gap-4 flex-wrap">
+                  {groups[region].map((p) => {
+                    const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
+                    return (
+                      <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
+                        <div className="panel aspect-square overflow-hidden group-hover:border-pulse-700/60 transition">
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pulse-900/40 via-panel2 to-black">
+                              <div className="w-20 h-20 rounded-full border-2 border-pulse-600/70 flex items-center justify-center text-pulse-300 font-display font-black text-xl">
+                                {p.title.split(/\s+/).map((w) => w[0]).join("").slice(0, 4)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 text-xs md:text-sm font-semibold text-zinc-100 leading-tight group-hover:text-pulse-300 transition">
+                          {p.title}
+                        </div>
+                        {p.subtitle && (
+                          <div className="text-[11px] text-zinc-500 leading-tight mt-0.5 line-clamp-2">{p.subtitle}</div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+
+            {ungrouped.length > 0 && (
+              <section>
+                <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
+                  {activeRegions.length > 0 ? "Other Locations" : "All Locations"}
+                  <span className="absolute left-0 -bottom-px h-[2px] w-12 bg-pulse-600" />
+                </h2>
+                <div className="flex gap-4 flex-wrap">
+                  {ungrouped.map((p) => {
+                    const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
+                    return (
+                      <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
+                        <div className="panel aspect-square overflow-hidden group-hover:border-pulse-700/60 transition">
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pulse-900/40 via-panel2 to-black">
+                              <div className="w-20 h-20 rounded-full border-2 border-pulse-600/70 flex items-center justify-center text-pulse-300 font-display font-black text-xl">
+                                {p.title.split(/\s+/).map((w) => w[0]).join("").slice(0, 4)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 text-xs md:text-sm font-semibold text-zinc-100 leading-tight group-hover:text-pulse-300 transition">
+                          {p.title}
+                        </div>
+                        {p.subtitle && (
+                          <div className="text-[11px] text-zinc-500 leading-tight mt-0.5 line-clamp-2">{p.subtitle}</div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+async function BusinessesView() {
+  const all = await getAllPages();
+  const settings = await getSettings();
+  const BUSINESS_CATEGORIES = ["business", "businesses", "company", "organisation", "organization"];
+  const businesses = all.filter(
+    (p) =>
+      isPageEnabled(settings, p.slug) &&
+      p.slug !== "businesses" &&
+      (
+        BUSINESS_CATEGORIES.includes(p.category.toLowerCase()) ||
+        p.tags.some((t) => ["business", "company", "organisation", "organization"].includes(t.toLowerCase()))
+      )
+  );
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <header className="border-b border-line pb-4">
+          <h1 className="font-display font-extrabold text-3xl text-white">Businesses</h1>
+          <p className="text-zinc-400 text-sm mt-1">Category page</p>
+        </header>
+        <section className="panel relative overflow-hidden">
+          <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, rgba(220,38,38,0.18), transparent 55%), linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))" }} />
+          <div className="relative px-6 py-12 text-center">
+            <h2 className="inline-block font-display text-2xl md:text-4xl font-black uppercase text-white leading-none tracking-tight border-b-[6px] border-pulse-600 pb-2">
+              Businesses
+            </h2>
+            <p className="mt-4 text-sm text-zinc-300">Legal storefronts, services, and player-run companies across San Andreas.</p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="font-display font-semibold text-white text-lg mb-3 pb-2 border-b border-line relative">
+            All Businesses
+            <span className="absolute left-0 -bottom-px h-[2px] w-12 bg-pulse-600" />
+          </h2>
+          {businesses.length === 0 ? (
+            <div className="panel p-8 text-center">
+              <p className="text-zinc-400 text-sm">No business pages yet.</p>
+            </div>
+          ) : (
+            <div className="flex gap-4 flex-wrap">
+              {businesses.map((p) => {
+                const img = firstGalleryImage(p.infobox?.imageUrl || p.infobox?.imageLabel) || p.imageUrl;
+                return (
+                  <Link key={p.slug} href={`/wiki/${p.slug}`} className="group w-36 md:w-40 shrink-0">
+                    <div className="panel aspect-square overflow-hidden group-hover:border-pulse-700/60 transition">
+                      {img ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pulse-900/40 via-panel2 to-black">
+                          <div className="w-20 h-20 rounded-full border-2 border-pulse-600/70 flex items-center justify-center text-pulse-300 font-display font-black text-xl">
+                            {p.title.split(/\s+/).map((w) => w[0]).join("").slice(0, 4)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs md:text-sm font-semibold text-zinc-100 leading-tight group-hover:text-pulse-300 transition">
+                      {p.title}
+                    </div>
+                    {p.subtitle && (
+                      <div className="text-[11px] text-zinc-500 leading-tight mt-0.5 line-clamp-2">{p.subtitle}</div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </div>
     </Layout>
   );

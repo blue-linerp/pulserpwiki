@@ -9,6 +9,7 @@ import WikiActions from "./WikiActions";
 import { autoLink, buildTitleIndex } from "@/lib/autolink";
 import { applyWikilinks } from "@/lib/articleHtml";
 import { getPage } from "@/data/pages/server";
+import { processWikiTemplates } from "@/lib/processTemplates";
 
 const DEPARTMENTS_LOGO = "/uploads/1778868250233-291a3b9a8adf.png";
 
@@ -154,7 +155,8 @@ export default async function WikiArticle({
       <div className={`grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6${(page.content || "").includes("data-wiki-notice") ? " has-notice-grid" : ""}`}>
         <div className="min-w-0">
           {page.content && page.content.trim() ? (() => {
-            const linked = applyWikilinks(page.content, linkIndex, page.slug);
+            const processed = processWikiTemplates(page.content);
+            const linked = applyWikilinks(processed, linkIndex, page.slug);
             const { notice, rest } = splitNotice(linked);
             return (
               <>

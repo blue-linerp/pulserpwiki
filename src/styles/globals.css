@@ -81,6 +81,74 @@ html, body {
   height: 0;
 }
 
+/* Wiki Table */
+.wiki-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+
+.wiki-table th {
+  background-color: #2d4a8a;
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #3d5fa0;
+}
+
+.wiki-table td {
+  background-color: #1a2744;
+  color: #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #2d3f6a;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.wiki-table tr:nth-child(even) td {
+  background-color: #1e2f52;
+}
+
+.wiki-table tr:hover td {
+  background-color: #243660;
+}
+
+/* First column bold like the screenshot */
+.wiki-table td:first-child,
+.wiki-table th:first-child {
+  font-weight: 700;
+  background-color: #2d4a8a;
+  color: #ffffff;
+}
+
+.wiki-table tr:hover td:first-child {
+  background-color: #3555a0;
+}
+
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tiptap td,
+.tiptap th {
+  border: 1px solid #3d5fa0;
+  padding: 0.5rem 0.75rem;
+  min-width: 60px;
+  position: relative;
+}
+
+.tiptap .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(45, 74, 138, 0.35);
+  pointer-events: none;
+}
+
+
 /* Apply the same look to saved/rendered article HTML */
 .tiptap-output { color: #d4d4d8; }
 .tiptap-output p { margin: 0.5em 0; }

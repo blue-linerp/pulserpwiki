@@ -7,6 +7,10 @@ import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { WikiNoticeNode, DEFAULT_NOTICE_CONTENT } from "@/lib/wikiNotice";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
 import { useEffect, useRef, useState } from "react";
 import {
   Undo2,
@@ -33,6 +37,7 @@ import {
   X,
   Bell as BellIcon,
   Search as SearchIcon,
+  Table as TableIcon,
 } from "lucide-react";
 
 interface Props {
@@ -76,6 +81,10 @@ export default function RichEditor({
         types: ["paragraph", "heading"],
         defaultAlignment: "left",
       }),
+      Table.configure({ resizable: false, HTMLAttributes: { class: "wiki-table" } }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: value || "<p></p>",
     editorProps: {
@@ -120,6 +129,7 @@ export default function RichEditor({
         uploadImage={uploadImage}
         onInsertInfobox={onInsertInfobox}
       />
+      <TableToolbar editor={editor} />
       <div className="bg-bg/40 border-t border-line overflow-visible">
         {sidebarSlot ? (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] overflow-visible">
@@ -1048,6 +1058,7 @@ function InsertMenu({
           >
             <Minus className="w-4 h-4" /> Horizontal rule
           </button>
+          <TableInsertButton editor={editor} onClose={() => setOpen(false)} />
         </Dropdown>
       )}
       <input
@@ -1063,6 +1074,85 @@ function InsertMenu({
           e.target.value = "";
         }}
       />
+    </div>
+  );
+}
+
+
+/* -------------------- Table insert -------------------- */
+
+function TableInsertButton({ editor, onClose }: { editor: Editor; onClose: () => void }) {
+  const [hoveredRow, setHoveredRow] = useState(0);
+  const [hoveredCol, setHoveredCol] = useState(0);
+  const ROWS = 8;
+  const COLS = 8;
+
+  return (
+    <div className="px-3 py-2 border-t border-line">
+      <div className="flex items-center gap-2 mb-2">
+        <TableIcon className="w-4 h-4 text-zinc-400" />
+        <span className="text-zinc-100 text-sm">Insert table</span>
+        <span className="ml-auto text-xs text-zinc-500">
+          {hoveredRow > 0 && hoveredCol > 0 ? `${hoveredRow} × ${hoveredCol}` : ""}
+        </span>
+      </div>
+      <div
+        className="grid gap-0.5"
+        style={{ gridTemplateColumns: `repeat(${COLS}, 1.25rem)` }}
+        onMouseLeave={() => { setHoveredRow(0); setHoveredCol(0); }}
+      >
+        {Array.from({ length: ROWS * COLS }).map((_, i) => {
+          const row = Math.floor(i / COLS) + 1;
+          const col = (i % COLS) + 1;
+          const active = row <= hoveredRow && col <= hoveredCol;
+          return (
+            <button
+              key={i}
+              type="button"
+              onMouseEnter={() => { setHoveredRow(row); setHoveredCol(col); }}
+              onClick={() => {
+                editor.chain().focus().insertTable({ rows: hoveredRow, cols: hoveredCol, withHeaderRow: true }).run();
+                onClose();
+              }}
+              className={`w-5 h-5 rounded-sm border transition ${
+                active
+                  ? "bg-pulse-600/40 border-pulse-500/60"
+                  : "bg-panel2 border-line hover:border-zinc-500"
+              }`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Table context toolbar -------------------- */
+
+function TableToolbar({ editor }: { editor: Editor }) {
+  if (!editor.isActive("table")) return null;
+  return (
+    <div className="flex items-center gap-0.5 px-2 py-1 bg-panel2/80 border-b border-line flex-wrap">
+      <span className="text-[11px] text-zinc-500 uppercase tracking-wider mr-1">Table:</span>
+      {[
+        { label: "Add col before", run: () => editor.chain().focus().addColumnBefore().run() },
+        { label: "Add col after", run: () => editor.chain().focus().addColumnAfter().run() },
+        { label: "Del col", run: () => editor.chain().focus().deleteColumn().run() },
+        { label: "Add row before", run: () => editor.chain().focus().addRowBefore().run() },
+        { label: "Add row after", run: () => editor.chain().focus().addRowAfter().run() },
+        { label: "Del row", run: () => editor.chain().focus().deleteRow().run() },
+        { label: "Toggle header", run: () => editor.chain().focus().toggleHeaderRow().run() },
+        { label: "Delete table", run: () => editor.chain().focus().deleteTable().run() },
+      ].map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          onClick={item.run}
+          className="inline-flex items-center h-6 px-2 rounded text-[11px] text-zinc-300 hover:bg-panel hover:text-white border border-transparent hover:border-line transition"
+        >
+          {item.label}
+        </button>
+      ))}
     </div>
   );
 }
